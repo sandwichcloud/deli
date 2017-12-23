@@ -5,6 +5,6 @@ deli
    :target: https://travis-ci.org/sandwichcloud/deli
 
 .. image:: https://badge.fury.io/py/deli.svg
-   :target: https://badge.fury.io/py/deli
+   :target: https://badge.fury.io/py/sandwichcloud-deli
 
 API, Metadata and Controller for Sandwich Cloud
