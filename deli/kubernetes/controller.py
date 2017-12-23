@@ -7,7 +7,7 @@ from kubernetes import client
 
 from deli.kubernetes.informer import Informer
 from deli.kubernetes.resources.model import ResourceState
-from deli.manager.workqueue import WorkQueue
+from deli.kubernetes.workqueue import WorkQueue
 
 
 class Controller(ABC):
