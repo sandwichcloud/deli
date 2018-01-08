@@ -31,7 +31,7 @@ class KeypairsRouter(Router):
         keypair = Keypair()
         keypair.name = request.name
         keypair.public_key = request.public_key
-        keypair.project = project.id
+        keypair.project = project
         keypair.create()
         return ResponseKeypair.from_database(keypair)
 

@@ -1,5 +1,7 @@
 import os
 
+from deli.counter.cli.commands.database.database import DatabaseCommand
+
 
 def main():
     os.environ['CLI'] = 'true'
@@ -7,4 +9,5 @@ def main():
     from deli.counter.cli.app import CounterApplication
 
     app = CounterApplication()
+    app.register_command(DatabaseCommand())
     app.run()

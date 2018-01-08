@@ -344,39 +344,39 @@ POLICIES = [
         ]
     },
 
-    # BuiltIn Users
+    # Database Users
     {
-        "name": "builtin:users:create",
+        "name": "database:users:create",
         "description": "Ability to create users",
     },
     {
-        "name": "builtin:users:get",
+        "name": "database:users:get",
         "description": "Ability to get a user",
         "tags": [
             "viewer"
         ]
     },
     {
-        "name": "builtin:users:list",
+        "name": "database:users:list",
         "description": "Ability to list users",
         "tags": [
             "viewer"
         ]
     },
     {
-        "name": "builtin:users:delete",
+        "name": "database:users:delete",
         "description": "Ability to delete a user"
     },
     {
-        "name": "builtin:users:password",
+        "name": "database:users:password",
         "description": "Ability to change a user's password"
     },
     {
-        "name": "builtin:users:role:add",
+        "name": "database:users:role:add",
         "description": "Ability to add a role to a user"
     },
     {
-        "name": "builtin:users:role:remove",
+        "name": "database:users:role:remove",
         "description": "Ability to remove a user from a role"
     },
 

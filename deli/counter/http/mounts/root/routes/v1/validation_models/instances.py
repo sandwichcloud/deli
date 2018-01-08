@@ -47,7 +47,7 @@ class ResponseInstance(Model):
             instance_model.zone_id = instance.zone_id
 
         for keypair_id in instance.keypair_ids:
-            instance_model.keypair_ids.append(keypair_id.id)
+            instance_model.keypair_ids.append(keypair_id)
 
         instance_model.state = instance.state
         if instance.error_message != "":
