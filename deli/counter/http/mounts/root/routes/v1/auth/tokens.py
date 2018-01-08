@@ -30,6 +30,7 @@ class AuthNTokenRouter(Router):
         response = ResponseVerifyToken()
 
         if cherrypy.request.service_account is not None:
+            response.service_account_id = cherrypy.request.service_account['id']
             response.service_account_name = cherrypy.request.service_account['name']
         else:
             response.username = cherrypy.request.user['name']
@@ -40,13 +41,13 @@ class AuthNTokenRouter(Router):
 
             for role_name in cherrypy.request.token['roles']['project']:
                 try:
-                    role: GlobalRole = ProjectRole.get(role_name)
+                    role: ProjectRole = ProjectRole.get(cherrypy.request.project, role_name)
                     project_role_names.append(role.name)
                 except ApiException as e:
                     if e.status != 404:
                         raise
 
-            response.project = cherrypy.request.project.name
+            response.project_id = cherrypy.request.project.id
             response.project_roles = project_role_names
         response.global_roles = global_role_names
         return response

@@ -8,7 +8,7 @@ from kubernetes import client
 from kubernetes.client import V1DeleteOptions
 from kubernetes.client.rest import ApiException
 
-from deli.kubernetes.resources.const import GROUP, NAME_LABEL
+from deli.kubernetes.resources.const import GROUP, NAME_LABEL, ID_LABEL
 from deli.kubernetes.resources.project import Project
 
 
@@ -25,12 +25,14 @@ class ResourceState(enum.Enum):
 class ResourceModel(object):
     def __init__(self, raw=None):
         if raw is None:
+            id = str(uuid.uuid4())
             raw = {
                 "apiVersion": GROUP + "/" + self.version(),
                 "kind": self.kind(),
                 "metadata": {
-                    "name": str(uuid.uuid4()),
+                    "name": id,
                     "labels": {
+                        ID_LABEL: id,
                         NAME_LABEL: None
                     },
                     "finalizers": [

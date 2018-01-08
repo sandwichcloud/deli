@@ -44,8 +44,7 @@ class VMWare(object):
                             folder=datacenter.networkFolder)
 
     def create_vm(self, vmware_client, vm_name, image, datacenter, cluster, datastore, folder, port_group, ip_address,
-                  gateway,
-                  subnet_mask, dns_servers):
+                  gateway, subnet_mask, dns_servers):
 
         relospec = vim.vm.RelocateSpec()
         relospec.datastore = datastore
@@ -72,27 +71,27 @@ class VMWare(object):
         nic.device.connectable.startConnected = True
         nic.device.connectable.allowGuestControl = True
 
-        globalip = vim.vm.customization.GlobalIPSettings()
-        globalip.dnsServerList = dns_servers
-
-        guest_map = vim.vm.customization.AdapterMapping()
-        guest_map.adapter = vim.vm.customization.IPSettings()
-        guest_map.adapter.ip = vim.vm.customization.FixedIp()
-        guest_map.adapter.ip.ipAddress = ip_address
-        guest_map.adapter.subnetMask = subnet_mask
-        guest_map.adapter.gateway = gateway
-
-        ident = vim.vm.customization.LinuxPrep()
-        ident.domain = 'sandwich.local'
-        ident.hostName = vim.vm.customization.FixedName()
-        ident.hostName.name = 'ip-' + ip_address.replace(".", "-")
-
-        customspec = vim.vm.customization.Specification()
-        customspec.nicSettingMap = [guest_map]
-        customspec.globalIPSettings = globalip
-        customspec.identity = ident
-
-        clonespec.customization = customspec
+        # globalip = vim.vm.customization.GlobalIPSettings()
+        # globalip.dnsServerList = dns_servers
+        #
+        # guest_map = vim.vm.customization.AdapterMapping()
+        # guest_map.adapter = vim.vm.customization.IPSettings()
+        # guest_map.adapter.ip = vim.vm.customization.FixedIp()
+        # guest_map.adapter.ip.ipAddress = ip_address
+        # guest_map.adapter.subnetMask = subnet_mask
+        # guest_map.adapter.gateway = gateway
+        #
+        # ident = vim.vm.customization.LinuxPrep()
+        # ident.domain = 'sandwich.local'
+        # ident.hostName = vim.vm.customization.FixedName()
+        # ident.hostName.name = 'ip-' + ip_address.replace(".", "-")
+        #
+        # customspec = vim.vm.customization.Specification()
+        # customspec.nicSettingMap = [guest_map]
+        # customspec.globalIPSettings = globalip
+        # customspec.identity = ident
+        #
+        # clonespec.customization = customspec
 
         vmconf = vim.vm.ConfigSpec()
         vmconf.numCPUs = 1  # TODO: allow customization of these
@@ -138,6 +137,31 @@ class VMWare(object):
         # self.wait_for_tasks([task])
 
         return task
+
+    def setup_serial_connection(self, vmware_client, vspc_address, vm):
+
+        serial_device = None
+        # Find the serial device
+        for dev in vm.config.hardware.device:
+            # Label may change if we add another port for logging
+            if isinstance(dev, vim.vm.device.VirtualSerialPort) and dev.deviceInfo.label == "Serial port 1":
+                serial_device = dev
+                break
+
+        # TODO: add port if none is found (i.e from an image created manually)
+
+        serial_device_spec = vim.vm.device.VirtualDeviceSpec()
+        serial_device_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.edit
+        serial_device_spec.device = serial_device
+        serial_device_spec.device.backing = vim.vm.device.VirtualSerialPort.URIBackingInfo()
+        serial_device_spec.device.backing.serviceURI = 'sandwich'
+        serial_device_spec.device.backing.direction = 'client'
+        serial_device_spec.device.backing.proxyURI = vspc_address
+
+        spec = vim.vm.ConfigSpec()
+        spec.deviceChange = [serial_device_spec]
+        task = vm.ReconfigVM_Task(spec=spec)
+        self.wait_for_tasks(vmware_client, [task])
 
     def power_on_vm(self, vmware_client, vm):
         if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOff:

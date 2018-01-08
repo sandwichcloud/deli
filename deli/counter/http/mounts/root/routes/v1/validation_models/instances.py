@@ -40,7 +40,7 @@ class ResponseInstance(Model):
         instance_model.image_id = instance.image_id
 
         instance_model.network_port_id = instance.network_port_id
-        # instance_model.service_account_name = instance.service_account.name
+        instance_model.service_account_id = instance.service_account_id
 
         instance_model.region_id = instance.region_id
         if instance.zone_id is not None:

@@ -49,7 +49,7 @@ class AuthManager(object):
         if project is not None:
             for role_id in token_data['roles']['project']:
                 try:
-                    role: GlobalRole = ProjectRole.get(role_id, project)
+                    role: ProjectRole = ProjectRole.get(project, role_id)
                     if role is None:
                         continue
                     if policy_name in role.policies:

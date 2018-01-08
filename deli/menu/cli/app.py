@@ -4,9 +4,9 @@ from clify.app import Application
 from pbr.version import VersionInfo
 
 
-class ManagerApplication(Application):
+class MetadataApplication(Application):
     def __init__(self):
-        super().__init__('deli_manager', 'CLI for Deli Manager')
+        super().__init__('deli_metadata', 'CLI for Deli Metadata')
 
     @property
     def version(self):

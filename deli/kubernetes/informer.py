@@ -8,9 +8,10 @@ from kubernetes import watch
 
 
 class Informer(object):
-    def __init__(self, resync_seconds, list_func, *list_args, **list_kwargs):
+    def __init__(self, name, resync_seconds, list_func, *list_args, **list_kwargs):
         self.logger = logging.getLogger("%s.%s" % (self.__module__, self.__class__.__name__))
         self.queue = Queue()
+        self.name = name
         self.list_func = list_func
         self.list_args = list_args
         self.list_kwargs = list_kwargs
@@ -39,9 +40,10 @@ class Informer(object):
             raise Exception("Informer already running.")
 
         self.processor = InformerProcessQueue(self.queue, self.add_funcs, self.update_funcs, self.delete_funcs)
-        self.watcher = InformerWatch(self.queue, self.cache, self.list_func, self.list_args, self.list_kwargs)
-        self.lister = InformerList(self.queue, self.cache, self.resync_seconds, self.list_func, self.list_args,
-                                   self.list_kwargs)
+        self.watcher = InformerWatch(self.name, self.queue, self.cache, self.list_func, self.list_args,
+                                     self.list_kwargs)
+        self.lister = InformerList(self.name, self.queue, self.cache, self.resync_seconds, self.list_func,
+                                   self.list_args, self.list_kwargs)
 
         self.processor.start()
         self.watcher.start()
@@ -98,8 +100,10 @@ class InformerProcessQueue(Thread):
 
 
 class InformerWatch(Thread):
-    def __init__(self, queue, cache, list_func, list_args, list_kwargs):
+    def __init__(self, name, queue, cache, list_func, list_args, list_kwargs):
         super().__init__()
+        self.logger = logging.getLogger("%s.%s" % (self.__module__, self.__class__.__name__))
+        self.name = name
         self.queue = queue
         self.cache = cache
         self.list_func = list_func
@@ -109,27 +113,36 @@ class InformerWatch(Thread):
         self.shutting_down = False
 
     def run(self):
-        # List first so we can get the resourceVersion to start at
-        # if we don't do this we get all events from the beginning of history
-        ret = self.list_func(*self.list_args, **self.list_kwargs)
-        resource_version = ret['metadata']['resourceVersion']
+        resource_version = None
         while self.shutting_down is False:
-            stream = self.watcher.stream(self.list_func, *self.list_args,
-                                         **{**self.list_kwargs, 'resource_version': resource_version})
-            # If there is nothing to stream this will hang for as long as the api server
-            # allows it. Any idea on how to break out sooner as it prevents a quick shutdown?
-            for event in stream:
-                operation = event['type']
-                obj = event['object']
+            try:
+                if resource_version is None:
+                    # List first so we can get the resourceVersion to start at
+                    # if we don't do this we get all events from the beginning of history
+                    ret = self.list_func(*self.list_args, **self.list_kwargs)
+                    resource_version = ret['metadata']['resourceVersion']
+                stream = self.watcher.stream(self.list_func, *self.list_args,
+                                             **{**self.list_kwargs, 'resource_version': resource_version})
+                # If there is nothing to stream this will hang for as long as the api server
+                # allows it. Any idea on how to break out sooner as it prevents a quick shutdown?
+                for event in stream:
+                    operation = event['type']
+                    obj = event['object']
 
-                metadata = obj.get("metadata")
-                resource_version = metadata['resourceVersion']
+                    metadata = obj.get("metadata")
+                    resource_version = metadata['resourceVersion']
 
-                cache_key = metadata.get("namespace") + "/" + metadata.get(
-                    "name") if metadata.get("namespace") != "" else metadata.get("name")
+                    cache_key = metadata.get("namespace") + "/" + metadata.get(
+                        "name") if metadata.get("namespace") != "" else metadata.get("name")
 
-                self.cache.add(cache_key, obj)
-                self.queue.put((operation, obj))
+                    self.cache.add(cache_key, obj)
+                    self.queue.put((operation, obj))
+            except Exception as e:
+                self.logger.error(
+                    "Caught Exception while watching " + self.name +
+                    " sleeping for 30 seconds before trying again. Enable debug logging to see exception")
+                self.logger.debug("Exception: ", exc_info=True)
+                time.sleep(30)
 
     def shutdown(self):
         self.watcher.stop()
@@ -137,8 +150,10 @@ class InformerWatch(Thread):
 
 
 class InformerList(Thread):
-    def __init__(self, queue, cache, resync_seconds, list_func, list_args, list_kwargs):
+    def __init__(self, name, queue, cache, resync_seconds, list_func, list_args, list_kwargs):
         super().__init__()
+        self.logger = logging.getLogger("%s.%s" % (self.__module__, self.__class__.__name__))
+        self.name = name
         self.queue = queue
         self.cache = cache
         self.list_func = list_func
@@ -151,21 +166,28 @@ class InformerList(Thread):
     @with_defer
     def run(self):
         while True:
-            new_cache = {}
-            ret = self.list_func(*self.list_args, **self.list_kwargs)
-            for obj in ret['items']:
-                if self.shutting_down.is_set():
-                    break
-                metadata = obj.get("metadata")
+            try:
+                new_cache = {}
+                ret = self.list_func(*self.list_args, **self.list_kwargs)
+                for obj in ret['items']:
+                    if self.shutting_down.is_set():
+                        break
+                    metadata = obj.get("metadata")
 
-                cache_key = metadata.get("namespace") + "/" + metadata.get(
-                    "name") if metadata.get("namespace") != "" else metadata.get("name")
+                    cache_key = metadata.get("namespace") + "/" + metadata.get(
+                        "name") if metadata.get("namespace") != "" else metadata.get("name")
 
-                new_cache[cache_key] = obj
-            self.cache.reset(new_cache)
-            for _, obj in new_cache.items():
-                self.queue.put(("MODIFIED", obj))
-            self.first_run = False
+                    new_cache[cache_key] = obj
+                self.cache.reset(new_cache)
+                for _, obj in new_cache.items():
+                    self.queue.put(("MODIFIED", obj))
+                self.first_run = False
+            except:
+                self.logger.error(
+                    "Caught Exception while listing " + self.name +
+                    " sleeping for 30 seconds before trying again. Enable debug logging to see exception")
+                self.logger.debug("Exception: ", exc_info=True)
+                time.sleep(30)
             if self.shutting_down.wait(timeout=self.resync_seconds):
                 break
 

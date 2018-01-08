@@ -16,6 +16,7 @@ from deli.kubernetes.resources.v1alpha1.instance.model import Instance, VMPowerS
 from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
 from deli.kubernetes.resources.v1alpha1.network.model import NetworkPort, Network
 from deli.kubernetes.resources.v1alpha1.region.model import Region
+from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
 from deli.kubernetes.resources.v1alpha1.zone.model import Zone
 
 
@@ -69,6 +70,14 @@ class InstanceRouter(Router):
                                          'A keypair with the requested id of %s does not exist.'.format(keypair_id))
             keypairs.append(keypair)
 
+        if request.service_account_id is not None:
+            service_account = ServiceAccount.get(project, request.service_account_id)
+            if service_account is None:
+                raise cherrypy.HTTPError(404, 'A service account with the requested id of %s does not exist.'.format(
+                    request.service_account_id))
+        else:
+            service_account = ServiceAccount.get_by_name(project, 'default')
+
         network_port = NetworkPort()
         network_port.project = project
         network_port.network = network
@@ -81,6 +90,7 @@ class InstanceRouter(Router):
         if zone is not None:
             instance.zone = zone
         instance.image = image
+        instance.service_account = service_account
         instance.network_port = network_port
         instance.keypairs = keypairs
         for k, v in request.tags.items():
@@ -148,13 +158,6 @@ class InstanceRouter(Router):
 
         if instance.state == ResourceState.Deleted:
             raise cherrypy.HTTPError(400, "Instance has already been deleted")
-
-        # Wait up to 5 minutes for a soft shutdown
-        # Should we make this configurable?
-        instance.task_kwargs = {
-            'hard': False,
-            'timeout': 300
-        }
 
         instance.delete()
 

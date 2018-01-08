@@ -14,8 +14,9 @@ from deli.kubernetes.resources.v1alpha1.zone.model import Zone
 
 
 class InstanceController(ModelController):
-    def __init__(self, worker_count, resync_seconds, vmware):
+    def __init__(self, worker_count, resync_seconds, vmware, vspc_url):
         super().__init__(worker_count, resync_seconds, Instance, vmware)
+        self.vspc_url = vspc_url
 
     def sync_model_handler(self, model):
         state_funcs = {
@@ -137,6 +138,7 @@ class InstanceController(ModelController):
                         return
                     datacenter = self.vmware.get_datacenter(vmware_client, model.region.datacenter)
                     vmware_vm = self.vmware.get_vm(vmware_client, str(model.id), datacenter)
+                    self.vmware.setup_serial_connection(vmware_client, self.vspc_url, vmware_vm)
                     self.vmware.power_on_vm(vmware_client, vmware_vm)
                     model.task = None
                     model.state = ResourceState.Created
@@ -163,6 +165,11 @@ class InstanceController(ModelController):
 
         # If the network port is gone we need to delete
         if model.network_port is None:
+            model.delete()
+            return
+
+        # If the service account is gone we need to delete
+        if model.service_account is None:
             model.delete()
             return
 
@@ -243,6 +250,10 @@ class InstanceController(ModelController):
 
     def to_delete(self, model):
         model.state = ResourceState.Deleting
+        model.task_kwargs = {
+            'hard': False,
+            'timeout': 300
+        }
         model.save()
 
     @with_defer
@@ -256,8 +267,8 @@ class InstanceController(ModelController):
                 vmware_vm = self.vmware.get_vm(vmware_client, str(model.id), datacenter)
                 if vmware_vm is None:
                     self.logger.warning(
-                        "Could not find backing vm for instance %s/%s when trying to delete".format(model.project.id,
-                                                                                                    model.id))
+                        "Could not find backing vm for instance %s/%s when trying to delete" % (model.project.id,
+                                                                                                model.id))
                 else:
                     power_state = str(vmware_vm.runtime.powerState)
                     if power_state == 'poweredOn':

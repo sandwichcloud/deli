@@ -39,10 +39,6 @@ LOGGING_CONFIG = {
             'level': 'INFO',
             'handlers': ['console']
         },
-        'sqlalchemy': {
-            'level': 'WARN',
-            'handlers': ['console']
-        },
     }
 }
 
@@ -60,7 +56,7 @@ if os.environ.get('CLI'):
 # Kubernetes       #
 ####################
 
-KUBE_CONFIG = os.environ.get("KUBE_CONFIG")
+KUBE_CONFIG = os.environ.get("KUBECONFIG")
 
 ####################
 # Auth             #

@@ -17,6 +17,8 @@ from deli.kubernetes.resources.v1alpha1.region.controller import RegionControlle
 from deli.kubernetes.resources.v1alpha1.region.model import Region
 from deli.kubernetes.resources.v1alpha1.role.controller import GlobalRoleController, ProjectRoleController
 from deli.kubernetes.resources.v1alpha1.role.model import GlobalRole, ProjectRole
+from deli.kubernetes.resources.v1alpha1.service_account.controller import ServiceAccountController
+from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
 from deli.kubernetes.resources.v1alpha1.zone.controller import ZoneController
 from deli.kubernetes.resources.v1alpha1.zone.model import Zone
 from deli.manager.vmware import VMWare
@@ -47,7 +49,7 @@ class RunManager(Daemon):
 
     def setup_arguments(self, parser):
         load_dotenv(os.path.join(os.getcwd(), '.env'))
-        parser.add_argument("--kube-config", action=EnvDefault, envvar="KUBE_CONFIG",
+        parser.add_argument("--kube-config", action=EnvDefault, envvar="KUBECONFIG",
                             help="Path to a kubeconfig. Only required if out-of-cluster.")
 
         required_group = parser.add_argument_group("required named arguments")
@@ -60,6 +62,9 @@ class RunManager(Daemon):
                                     help="The username to use to connect to VCenter")
         required_group.add_argument("--vcenter-password", action=EnvDefault, envvar="VCENTER_PASSWORD", required=True,
                                     help="The password to use to connect to VCenter")
+
+        required_group.add_argument("--menu-url", action=EnvDefault, envvar="MENU_URL", required=True,
+                                    help="Telnet URL to the menu server")
 
     def run(self, args) -> int:
         if args.kube_config is None:
@@ -86,6 +91,8 @@ class RunManager(Daemon):
         NetworkPort.wait_for_crd()
         Image.create_crd()
         Image.wait_for_crd()
+        ServiceAccount.create_crd()
+        ServiceAccount.wait_for_crd()
         Instance.create_crd()
         Instance.wait_for_crd()
         Keypair.create_crd()
@@ -101,7 +108,8 @@ class RunManager(Daemon):
         self.launch_controller(NetworkController(1, 30, vmware))
         self.launch_controller(NetworkPortController(1, 30))
         self.launch_controller(ImageController(1, 30, vmware))
-        self.launch_controller(InstanceController(1, 30, vmware))
+        self.launch_controller(ServiceAccountController(1, 30))
+        self.launch_controller(InstanceController(1, 30, vmware, args.menu_url))
         self.launch_controller(KeypairController(1, 30))
         return 0
 

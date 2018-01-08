@@ -1,12 +1,14 @@
 import enum
 import uuid
 
-from deli.kubernetes.resources.const import TAG_LABEL, REGION_LABEL, ZONE_LABEL, IMAGE_LABEL, NETWORK_LABEL
+from deli.kubernetes.resources.const import TAG_LABEL, REGION_LABEL, ZONE_LABEL, IMAGE_LABEL, NETWORK_LABEL, \
+    NETWORK_PORT_LABEL, SERVICE_ACCOUNT_LABEL
 from deli.kubernetes.resources.model import ProjectResourceModel
 from deli.kubernetes.resources.v1alpha1.image.model import Image
 from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
 from deli.kubernetes.resources.v1alpha1.network.model import NetworkPort
 from deli.kubernetes.resources.v1alpha1.region.model import Region
+from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
 from deli.kubernetes.resources.v1alpha1.zone.model import Zone
 
 
@@ -32,9 +34,9 @@ class Instance(ProjectResourceModel):
             self._raw['metadata']['labels'][ZONE_LABEL] = None
             self._raw['metadata']['labels'][IMAGE_LABEL] = None
             self._raw['metadata']['labels'][NETWORK_LABEL] = None
+            self._raw['metadata']['labels'][NETWORK_PORT_LABEL] = None
+            self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL] = None
             self._raw['spec'] = {
-                'image': None,
-                'networkPort': None,
                 'cores': 1,
                 'ram': 1024,
                 'keypairs': [],
@@ -90,20 +92,31 @@ class Instance(ProjectResourceModel):
     @image.setter
     def image(self, value):
         self._raw['metadata']['labels'][IMAGE_LABEL] = str(value.id)
-        self._raw['spec']['image'] = str(value.id)
 
     @property
     def network_port_id(self):
-        return uuid.UUID(self._raw['spec']['networkPort'])
+        return uuid.UUID(self._raw['metadata']['labels'][NETWORK_PORT_LABEL])
 
     @property
     def network_port(self):
-        return NetworkPort.get(self.project, self._raw['spec']['networkPort'])
+        return NetworkPort.get(self.project, self._raw['metadata']['labels'][NETWORK_PORT_LABEL])
 
     @network_port.setter
     def network_port(self, value):
         self._raw['metadata']['labels'][NETWORK_LABEL] = str(value.network.id)
-        self._raw['spec']['networkPort'] = str(value.id)
+        self._raw['metadata']['labels'][NETWORK_PORT_LABEL] = str(value.id)
+
+    @property
+    def service_account_id(self):
+        return uuid.UUID(self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL])
+
+    @property
+    def service_account(self):
+        return ServiceAccount.get(self.project, self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL])
+
+    @service_account.setter
+    def service_account(self, value):
+        self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL] = str(value.id)
 
     @property
     def power_state(self):
@@ -140,7 +153,7 @@ class Instance(ProjectResourceModel):
         tags = {}
         for label, v in self._raw['metadata']['labels'].items():
             if label.startswith(TAG_LABEL):
-                tags[label.split("/")[-1]] = v
+                tags[label.replace(TAG_LABEL, '')] = v
 
         return tags
 

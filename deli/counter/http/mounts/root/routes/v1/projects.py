@@ -10,6 +10,7 @@ from deli.http.route import Route
 from deli.http.router import Router
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.role.model import ProjectRole
+from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
 
 
 class ProjectRouter(Router):
@@ -38,6 +39,7 @@ class ProjectRouter(Router):
             raise
 
         ProjectRole.create_default_roles(project)
+        ServiceAccount.create_default_service_account(project)
 
         return ResponseProject.from_database(project)
 

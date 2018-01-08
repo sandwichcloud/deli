@@ -1,3 +1,36 @@
 ---
 version: "3"
-services: {}
+services:
+  etcd:
+    image: gcr.io/google_containers/etcd-amd64:3.0.17
+    command:
+      - etcd
+      - --listen-client-urls=http://127.0.0.1:2379
+      - --advertise-client-urls=http://127.0.0.1:2379
+      - --data-dir=/var/lib/etcd
+    ports:
+      - "8081:8080"
+    volumes:
+      - etcd:/var/lib/etcd
+  kube-api:
+    image: gcr.io/google_containers/hyperkube-amd64:v1.7.8
+    network_mode: "service:etcd"
+    command:
+      - kube-apiserver
+      - --etcd-servers=http://127.0.0.1:2379
+      - --service-cluster-ip-range=10.96.0.0/16
+      - --admission-control=Initializers,NamespaceLifecycle
+      - --insecure-bind-address=0.0.0.0
+      - --insecure-allow-any-token
+  # Controller manager is needed to run the namespace lifecycle
+  kube-controller-manager:
+    image: gcr.io/google_containers/kube-controller-manager-amd64:v1.7.8
+    network_mode: "service:etcd"
+    command:
+      - kube-controller-manager
+      - --controllers=*,tokencleaner
+      - --address=127.0.0.1
+      - --master=http://127.0.0.1:8080
+
+volumes:
+  etcd:

@@ -11,12 +11,12 @@ from deli.kubernetes.workqueue import WorkQueue
 
 
 class Controller(ABC):
-    def __init__(self, worker_count, resync_seconds, list_func, *list_args, **list_kwargs):
+    def __init__(self, name, worker_count, resync_seconds, list_func, *list_args, **list_kwargs):
         super().__init__()
         self.logger = logging.getLogger("%s.%s" % (self.__module__, self.__class__.__name__))
         self.worker_count = worker_count
 
-        self.informer = Informer(resync_seconds, list_func, *list_args, **list_kwargs)
+        self.informer = Informer(name, resync_seconds, list_func, *list_args, **list_kwargs)
         self.informer.add_event_funcs(self.__add_func, self.__update_func, None)
 
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=self.worker_count)
@@ -40,7 +40,8 @@ class Controller(ABC):
 
         # Run a worker for each thread
         for _ in range(0, self.worker_count):
-            self.executor.submit(self.run_worker)
+            if self.executor._shutdown is False:
+                self.executor.submit(self.run_worker)
 
     def run_worker(self):
         while self.process_next_item():
@@ -91,7 +92,7 @@ class ModelController(Controller):
 
         list_args, list_kwargs = self.model_cls.list_sig()
 
-        super().__init__(worker_count, resync_seconds, list_func, *list_args, **list_kwargs)
+        super().__init__(self.model_cls.__name__, worker_count, resync_seconds, list_func, *list_args, **list_kwargs)
 
     def sync_handler(self, key):
         obj = self.informer.cache.get(key)
