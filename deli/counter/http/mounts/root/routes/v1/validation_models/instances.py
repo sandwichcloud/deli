@@ -3,7 +3,7 @@ from schematics.types import UUIDType, IntType, DictType, ListType, BooleanType,
 
 from deli.http.schematics.types import KubeString, EnumType, ArrowType, KubeName
 from deli.kubernetes.resources.model import ResourceState
-from deli.kubernetes.resources.v1alpha1.instance.model import Instance
+from deli.kubernetes.resources.v1alpha1.instance.model import Instance, VMPowerState, VMTask
 
 
 class RequestCreateInstance(Model):
@@ -28,6 +28,8 @@ class ResponseInstance(Model):
     service_account_id = UUIDType()
     keypair_ids = ListType(UUIDType, default=list)
     state = EnumType(ResourceState, required=True)
+    power_state = EnumType(VMPowerState, required=True)
+    task = EnumType(VMTask)
     tags = DictType(KubeString, default=dict)
     error_message = StringType()
     created_at = ArrowType(required=True)
@@ -52,6 +54,10 @@ class ResponseInstance(Model):
         instance_model.state = instance.state
         if instance.error_message != "":
             instance_model.error_message = instance.error_message
+
+        instance_model.power_state = instance.power_state
+        instance_model.task = instance.task
+            
         instance_model.tags = instance.tags
         instance_model.created_at = instance.created_at
         return instance_model
