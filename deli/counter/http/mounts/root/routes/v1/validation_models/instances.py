@@ -14,7 +14,7 @@ class RequestCreateInstance(Model):
     region_id = UUIDType(required=True)
     zone_id = UUIDType()
     keypair_ids = ListType(UUIDType, default=list)
-    tags = DictType(KubeString)
+    tags = DictType(KubeString, default=dict)
 
 
 class ResponseInstance(Model):
@@ -57,7 +57,7 @@ class ResponseInstance(Model):
 
         instance_model.power_state = instance.power_state
         instance_model.task = instance.task
-            
+
         instance_model.tags = instance.tags
         instance_model.created_at = instance.created_at
         return instance_model

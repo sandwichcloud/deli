@@ -312,11 +312,10 @@ class InstanceController(ModelController):
             if instance.id == model.id:
                 # Skip own instance
                 continue
-            if instance.state != ResourceState.Created:
-                # Skip instances that are not created
-                continue
             vm = self.vmware.get_vm(vmware_client, str(instance.id), datacenter)
-            host = vm.host.name
+            if vm is None:
+                continue
+            host = vm.runtime.host.name
             if host not in used_resources:
                 used_resources[host] = (instance.cores, instance.ram)
             else:
@@ -329,7 +328,7 @@ class InstanceController(ModelController):
             total_cores = math.floor(host.hardware.cpuInfo.numCpuThreads * (zone.core_provision_percent / 100))
             total_ram = math.floor(host.hardware.memorySize * (zone.ram_provision_percent / 100))
             if host.name in used_resources:
-                used_cores, used_ram = used_resources[host]
+                used_cores, used_ram = used_resources[host.name]
                 available_cores = total_cores - used_cores
                 available_ram = total_ram - used_ram
             else:
