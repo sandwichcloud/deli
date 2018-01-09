@@ -10,13 +10,12 @@ WORKDIR /usr/src/app
 # Install build time dependencies for uwsgi
 # Install uwsgi and dumb-init
 RUN apk --no-cache add --virtual build-deps \
-    build-base bash linux-headers pcre-dev libffi-dev && \
+    build-base bash linux-headers openssl-dev pcre-dev libffi-dev && \
     pip install uwsgi dumb-init
 
 # COPY tar.gz from build container
 # Install it
 # COPY over wsgi configuration
-# TODO: this should be replaced by a build arg to install the correct version from pypi
 COPY --from=0 /usr/src/app/dist/. .
 RUN bash -c "pip install *"
 COPY docker/counter/wsgi.ini wsgi.ini
