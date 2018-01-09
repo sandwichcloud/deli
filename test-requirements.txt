@@ -1,0 +1,4 @@
+pytest==3.0.7 # MIT
+pytest-cov==2.4.0 # MIT
+WebTest==2.0.28 # MIT
+Faker==0.8.6 # MIT

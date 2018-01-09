@@ -1,7 +1,7 @@
 import cherrypy
 
-from deli.counter.http.mounts.root.routes.v1.validation_models.zones import RequestCreateZone, ResponseZone, ParamsZone, \
-    ParamsListZone, RequestZoneSchedule
+from deli.counter.http.mounts.root.routes.v1.validation_models.zones import RequestCreateZone, ResponseZone, \
+    ParamsZone, ParamsListZone, RequestZoneSchedule
 from deli.http.request_methods import RequestMethods
 from deli.http.route import Route
 from deli.http.router import Router

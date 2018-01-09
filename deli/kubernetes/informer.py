@@ -182,7 +182,7 @@ class InformerList(Thread):
                 for _, obj in new_cache.items():
                     self.queue.put(("MODIFIED", obj))
                 self.first_run = False
-            except:
+            except Exception:
                 self.logger.error(
                     "Caught Exception while listing " + self.name +
                     " sleeping for 30 seconds before trying again. Enable debug logging to see exception")
