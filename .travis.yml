@@ -37,15 +37,13 @@ jobs:
       - secure: ZRNUL/XN6CYNapIr12ZGxccPr06TrY16UsLgqOdoXI8HOt7z3aW9a59BnIHdS4YTHRI8mNEHBVU3oiQYkgEyJ/Rporgm7VZN2c6s/o9UK+DVri9WVZMttYrprK9e8E6NBFHT9N9vZ9xWG0/cHkHGNA4SrvgPwwKh9PQypHdA20VmkOj5rDjYWBOzqInuLQzKHF2gxjLca05eGpycVAKumRhA3SwzSrTzIJko6OUV5MjuF1g9sOm7+x1p2uchppnc3Gq85C+ajgldjQ8Ow6wj8ZDiT3H8h9TfLnwJp4DPV+XV46phaLLXae4RXvp7jOTZWmBOXboIYJgDPiVRokyd1ZagBHZYcrC0upLXg/auOQ1wxCZtmyNM7u+Bp2Qfb/UZPWxtSX8hNtRqu4EMVqg6pymc0NMIQ8d/lNSZlDiXsmAUr0xxPo2n1dJKrJYygUmqgoh5sH5y3KQ+smt3y8QSahhN38IuN0HTrMyT2+IykHMX4rVYBBwKLLnu33in+lvp6gQazvRsoQ4DPYR39Bvgm/U8TOhfS3o9s03mIJaSp8N3YuRl9H4pmriuPMZoF40j+/NpvJBJcya+amqRd4Jbv0uK/AkfnubWARIUO+UYvpksrRaVJ79Pv3PLeCr8fCfd9GmnfhAq1pRLmUY9CikjXYRLaqp8Tb3FlvutRWkrizA=
       - secure: Pmw9yHLzNOx6Aka0Kx3MC3fe/3jDtSlef3riaVc9fNZ2Z757OaFsOranViM16KOrK6y7rKOSWKrId1kBQa5dbKqusV9nSPyFlsUhdjfdB+QntgkS/b09TCjNUAgEpMD5C82Rc5uTsSEFWy/2XE8r4UXPN+T7paYc+2ko+KoMiokJFwJv5cb9OMPOKne/Nd78A5GSp51Qe0/n+DVJqU0VOPxgesH971wMd+779UprgDFdYYHFqVTStLRJAcxWvhMDiNwFiyb9LYcKtDGlI/apbDKPZNDRk0oaEyGxd7bYLad+0vW9heJOsFPUF44ye+vaoUgb6C6tcGrHvwIvVvHZkN1gWe/72lcaL0AFOHyBwcBbOy8FFkLawzbPD5VeQECPvKEzgTH+BQNdrinZi7x51h1zrAxtBKw+aCqjHKN1yviRcXwnVj9I9803jbroBpyUWjNADvpLQturHyXyE8w9uC82AduMQPkB7Y+ZrVgSh3M/rq/jnkoHAm2gdB76oqvTCCGyb7ZTOaIEj3yedIJb+Us0577D3lFNnaSM1aFWt4JVfLWjLRmHzvGd2NnbbcAFo+VOIhclpH6vThb5xk9c373l0MWw6kDlnk79JrI2riaTNe+t0YyeN7gIIiz5F2EX+lG+fRP4kQ389URF3o/y52roNZh64YEyP6l7hH/kJjk=
     script:
-      - docker build -f docker/counter/Dockerfile -t counter .
-      - docker build -f docker/manager/Dockerfile -t manager .
-      - docker build -f docker/menu/Dockerfile -t menu .
-      - docker tag counter "sandwichcloud/deli-counter:$TRAVIS_TAG"
-      - docker tag counter sandwichcloud/deli-counter:latest
-      - docker tag manager "sandwichcloud/deli-manager:$TRAVIS_TAG"
-      - docker tag manager sandwichcloud/deli-manager:latest
-      - docker tag menu "sandwichcloud/deli-menu:$TRAVIS_TAG"
-      - docker tag menu sandwichcloud/deli-menu:latest
+      - tox -e build
+      - docker build -f docker/counter/Dockerfile -t sandwichcloud/deli-counter:latest .
+      - docker build -f docker/manager/Dockerfile -t sandwichcloud/deli-manager:latest .
+      - docker build -f docker/menu/Dockerfile -t sandwichcloud/deli-menu:latest .
+      - docker tag sandwichcloud/deli-counter:latest "sandwichcloud/deli-counter:$TRAVIS_TAG"
+      - docker tag sandwichcloud/deli-manager:latest "sandwichcloud/deli-manager:$TRAVIS_TAG"
+      - docker tag sandwichcloud/deli-menu:latest "sandwichcloud/deli-menu:$TRAVIS_TAG"
       - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
       - docker push "sandwichcloud/deli-counter:$TRAVIS_TAG"
       - docker push sandwichcloud/deli-counter:latest

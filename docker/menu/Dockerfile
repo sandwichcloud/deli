@@ -1,21 +1,16 @@
 FROM python:3-alpine
 WORKDIR /usr/src/app
 
-COPY . .
-RUN apk -U add git && python setup.py bdist_wheel
-
-FROM python:3-alpine
-WORKDIR /usr/src/app
-
 # Install build time dependencies for uwsgi
-# Install dumb-init
+# Install uwsgi and dumb-init
 RUN apk --no-cache add --virtual build-deps \
     build-base bash linux-headers openssl-dev pcre-dev libffi-dev && \
-    pip install dumb-init
+    pip install uwsgi dumb-init
 
 # COPY tar.gz from build container
 # Install it
-COPY --from=0 /usr/src/app/dist/. .
+
+COPY dist/. .
 RUN bash -c "pip install *"
 
 # Remove build time dependencies
