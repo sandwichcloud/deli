@@ -1,9 +1,12 @@
 import argparse
 import os
+import time
 
+import urllib3
 from clify.daemon import Daemon
 from dotenv import load_dotenv
-from kubernetes import config
+from kubernetes import config, client
+from kubernetes.client import Configuration
 
 from deli.kubernetes.resources.v1alpha1.image.controller import ImageController
 from deli.kubernetes.resources.v1alpha1.image.model import Image
@@ -49,8 +52,10 @@ class RunManager(Daemon):
 
     def setup_arguments(self, parser):
         load_dotenv(os.path.join(os.getcwd(), '.env'))
-        parser.add_argument("--kube-config", action=EnvDefault, envvar="KUBECONFIG",
+        parser.add_argument("--kube-config", action=EnvDefault, envvar="KUBECONFIG", required=False, default="",
                             help="Path to a kubeconfig. Only required if out-of-cluster.")
+        parser.add_argument('--kube-master', action=EnvDefault, envvar="KUBEMASTER", required=False, default="",
+                            help="The address of the Kubernetes API server (overrides any value in kubeconfig)")
 
         required_group = parser.add_argument_group("required named arguments")
 
@@ -67,12 +72,25 @@ class RunManager(Daemon):
                                     help="Telnet URL to the menu server")
 
     def run(self, args) -> int:
-        if args.kube_config is None:
+        if args.kube_config != "" or args.kube_master != "":
+            self.logger.info("Using kube-config configuration")
+            Configuration.set_default(Configuration())
+            if args.kube_config != "":
+                config.load_kube_config(config_file=args.kube_config)
+            if args.kube_master != "":
+                Configuration._default.host = args.kube_master
+
+        else:
             self.logger.info("Using in-cluster configuration")
             config.load_incluster_config()
-        else:
-            self.logger.info("Using kube-config configuration")
-            config.load_kube_config(config_file=args.kube_config)
+
+        while True:
+            try:
+                client.CoreV1Api().list_namespace()
+                break
+            except urllib3.exceptions.HTTPError as e:
+                self.logger.error("Error connecting to the Kubernetes API. Trying again in 5 seconds. Error: " + str(e))
+                time.sleep(5)
 
         self.logger.info("Creating CRDs")
         GlobalRole.create_crd()

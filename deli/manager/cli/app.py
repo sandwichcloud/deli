@@ -10,7 +10,7 @@ class ManagerApplication(Application):
 
     @property
     def version(self):
-        return VersionInfo('deli').semantic_version().release_string()
+        return VersionInfo('sandwichcloud-deli').semantic_version().release_string()
 
     def logging_config(self, log_level: int) -> dict:
         return {

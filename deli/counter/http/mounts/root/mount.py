@@ -4,6 +4,7 @@ import arrow
 import cherrypy
 from cryptography.fernet import Fernet, MultiFernet, InvalidToken
 from kubernetes import config
+from kubernetes.client import Configuration
 from simple_settings import settings
 
 from deli.counter.auth.manager import AuthManager
@@ -94,8 +95,12 @@ class RootMount(ApplicationMount):
         self.auth_manager.load_drivers()
 
     def __setup_kubernetes(self):
-        if settings.KUBE_CONFIG is not None:
-            config.load_kube_config(config_file=settings.KUBE_CONFIG)
+        if settings.KUBE_CONFIG is not None or settings.KUBE_MASTER is not None:
+            Configuration.set_default(Configuration())
+            if settings.KUBE_CONFIG is not None:
+                config.load_kube_config(config_file=settings.KUBE_CONFIG)
+            if settings.KUBE_MASTER is not None:
+                Configuration.host = settings.KUBE_MASTER
         else:
             config.load_incluster_config()
 

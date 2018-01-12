@@ -112,20 +112,12 @@ class InstanceController(ModelController):
                 if zone.vm_folder is not None:
                     folder = self.vmware.get_folder(vmware_client, zone.vm_folder, datacenter)
 
-                dns_servers = [str(dns_server) for dns_server in network.dns_servers]
-                create_vm_task = self.vmware.create_vm(vmware_client,
-                                                       vm_name=str(model.id),
-                                                       datacenter=datacenter,
+                create_vm_task = self.vmware.create_vm(vm_name=str(model.id),
                                                        image=vmware_image,
                                                        cluster=cluster,
                                                        datastore=datastore,
                                                        folder=folder,
-                                                       port_group=port_group,
-                                                       ip_address=str(network_port.ip_address),
-                                                       gateway=str(network.gateway),
-                                                       subnet_mask=str(network.cidr.netmask),
-                                                       dns_servers=dns_servers
-                                                       )
+                                                       port_group=port_group)
                 model.task = VMTask.BUILDING
                 model.task_kwargs = {"task_key": create_vm_task.info.key}
         elif model.task == VMTask.BUILDING:

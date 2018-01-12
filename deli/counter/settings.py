@@ -57,6 +57,7 @@ if os.environ.get('CLI'):
 ####################
 
 KUBE_CONFIG = os.environ.get("KUBECONFIG")
+KUBE_MASTER = os.environ.get("KUBEMASTER")
 
 ####################
 # Auth             #

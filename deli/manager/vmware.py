@@ -43,8 +43,7 @@ class VMWare(object):
         return self.get_obj(vmware_client, vim.dvs.DistributedVirtualPortgroup, port_group_name,
                             folder=datacenter.networkFolder)
 
-    def create_vm(self, vmware_client, vm_name, image, datacenter, cluster, datastore, folder, port_group, ip_address,
-                  gateway, subnet_mask, dns_servers):
+    def create_vm(self, vm_name, image, cluster, datastore, folder, port_group):
 
         relospec = vim.vm.RelocateSpec()
         relospec.datastore = datastore
@@ -70,28 +69,6 @@ class VMWare(object):
         nic.device.connectable = vim.vm.device.VirtualDevice.ConnectInfo()
         nic.device.connectable.startConnected = True
         nic.device.connectable.allowGuestControl = True
-
-        # globalip = vim.vm.customization.GlobalIPSettings()
-        # globalip.dnsServerList = dns_servers
-        #
-        # guest_map = vim.vm.customization.AdapterMapping()
-        # guest_map.adapter = vim.vm.customization.IPSettings()
-        # guest_map.adapter.ip = vim.vm.customization.FixedIp()
-        # guest_map.adapter.ip.ipAddress = ip_address
-        # guest_map.adapter.subnetMask = subnet_mask
-        # guest_map.adapter.gateway = gateway
-        #
-        # ident = vim.vm.customization.LinuxPrep()
-        # ident.domain = 'sandwich.local'
-        # ident.hostName = vim.vm.customization.FixedName()
-        # ident.hostName.name = 'ip-' + ip_address.replace(".", "-")
-        #
-        # customspec = vim.vm.customization.Specification()
-        # customspec.nicSettingMap = [guest_map]
-        # customspec.globalIPSettings = globalip
-        # customspec.identity = ident
-        #
-        # clonespec.customization = customspec
 
         vmconf = vim.vm.ConfigSpec()
         vmconf.numCPUs = 1  # TODO: allow customization of these
@@ -148,15 +125,20 @@ class VMWare(object):
                 serial_device = dev
                 break
 
-        # TODO: add port if none is found (i.e from an image created manually)
-
         serial_device_spec = vim.vm.device.VirtualDeviceSpec()
         serial_device_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.edit
-        serial_device_spec.device = serial_device
+
+        if serial_device is None:
+            serial_device_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
+            serial_device_spec.device = vim.vm.device.VirtualSerialPort()
+        else:
+            serial_device_spec.device = serial_device
+
         serial_device_spec.device.backing = vim.vm.device.VirtualSerialPort.URIBackingInfo()
         serial_device_spec.device.backing.serviceURI = 'sandwich'
         serial_device_spec.device.backing.direction = 'client'
         serial_device_spec.device.backing.proxyURI = vspc_address
+        serial_device_spec.device.yieldOnPoll = True
 
         spec = vim.vm.ConfigSpec()
         spec.deviceChange = [serial_device_spec]
