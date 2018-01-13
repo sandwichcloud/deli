@@ -100,7 +100,7 @@ class RootMount(ApplicationMount):
             if settings.KUBE_CONFIG is not None:
                 config.load_kube_config(config_file=settings.KUBE_CONFIG)
             if settings.KUBE_MASTER is not None:
-                Configuration.host = settings.KUBE_MASTER
+                Configuration._default.host = settings.KUBE_MASTER
         else:
             config.load_incluster_config()
 
