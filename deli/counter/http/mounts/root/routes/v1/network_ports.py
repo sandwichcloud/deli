@@ -2,8 +2,10 @@ import cherrypy
 
 from deli.counter.http.mounts.root.routes.v1.validation_models.network_ports import ResponseNetworkPort, \
     ParamsNetworkPort, ParamsListNetworkPort
+from deli.http.request_methods import RequestMethods
 from deli.http.route import Route
 from deli.http.router import Router
+from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.v1alpha1.network.model import NetworkPort
 
 
@@ -30,3 +32,20 @@ class NetworkPortsRouter(Router):
             'project': cherrypy.request.project
         }
         return self.paginate(NetworkPort, ResponseNetworkPort, limit, marker, **kwargs)
+
+    @Route(route='{network_port_id}', methods=[RequestMethods.DELETE])
+    @cherrypy.tools.project_scope()
+    @cherrypy.tools.model_params(cls=ParamsNetworkPort)
+    @cherrypy.tools.resource_object(id_param="network_port_id", cls=NetworkPort)
+    @cherrypy.tools.enforce_policy(policy_name="network_ports:delete")
+    def delete(self, **_):
+        cherrypy.response.status = 204
+        network_port: NetworkPort = cherrypy.request.resource_object
+
+        if network_port.state == ResourceState.ToDelete or network_port.state == ResourceState.Deleting:
+            raise cherrypy.HTTPError(400, "Network Port is already being deleting")
+
+        if network_port.state == ResourceState.Deleted:
+            raise cherrypy.HTTPError(400, "Network Port has already been deleted")
+
+        network_port.delete()

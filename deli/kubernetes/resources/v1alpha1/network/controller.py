@@ -3,8 +3,9 @@ from threading import RLock
 from go_defer import with_defer, defer
 
 from deli.kubernetes.controller import ModelController
-from deli.kubernetes.resources.const import NETWORK_LABEL
+from deli.kubernetes.resources.const import NETWORK_LABEL, NETWORK_PORT_LABEL
 from deli.kubernetes.resources.model import ResourceState
+from deli.kubernetes.resources.v1alpha1.instance.model import Instance
 from deli.kubernetes.resources.v1alpha1.network.model import Network, NetworkPort
 
 
@@ -152,7 +153,12 @@ class NetworkPortController(ModelController):
         model.save()
 
     def deleting(self, model):
-        # Resources that depend on the network will be auto deleted during their sync
+
+        instances = Instance.list_all(label_selector=NETWORK_PORT_LABEL + "=" + str(model.id))
+        if len(instances) > 0:
+            # There is still an instance with the network port so lets wait
+            return
+
         model.state = ResourceState.Deleted
         model.save()
 

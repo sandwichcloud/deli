@@ -164,8 +164,13 @@ class InstanceController(ModelController):
             model.delete()
             return
 
-        # If the network port is gone we need to delete
+        # If the network port is gone we need to delete because bad network things may happen
         if model.network_port is None:
+            model.delete()
+            return
+
+        # Network port is being deleted so we should delete
+        if model.network_port.state != ResourceState.Created:
             model.delete()
             return
 

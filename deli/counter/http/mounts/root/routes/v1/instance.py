@@ -42,6 +42,9 @@ class InstanceRouter(Router):
         region = Region.get(request.region_id)
         if region is None:
             raise cherrypy.HTTPError(404, 'A region with the requested id does not exist.')
+        if region.state != ResourceState.Created:
+            raise cherrypy.HTTPError(400, 'Can only create a instance with a region in the following state: %s'.format(
+                ResourceState.Created))
 
         zone = None
         if request.zone_id is not None:
@@ -50,18 +53,28 @@ class InstanceRouter(Router):
                 raise cherrypy.HTTPError(404, 'A zone with the requested id does not exist.')
             if zone.region.id != region.id:
                 raise cherrypy.HTTPError(409, 'The requested zone is not within the requested region')
+            if zone.state != ResourceState.Created:
+                raise cherrypy.HTTPError(400,
+                                         'Can only create a instance with a zone in the following state: %s'.format(
+                                             ResourceState.Created))
 
         network = Network.get(request.network_id)
         if network is None:
             raise cherrypy.HTTPError(404, 'A network with the requested id does not exist.')
         if network.region.id != region.id:
             raise cherrypy.HTTPError(409, 'The requested network is not within the requested region')
+        if network.state != ResourceState.Created:
+            raise cherrypy.HTTPError(400, 'Can only create a instance with a network in the following state: %s'.format(
+                ResourceState.Created))
 
         image = Image.get(project, request.image_id)
         if image is None:
             raise cherrypy.HTTPError(404, 'An image with the requested id does not exist.')
         if image.region.id != region.id:
             raise cherrypy.HTTPError(409, 'The requested image is not within the requested region')
+        if image.state != ResourceState.Created:
+            raise cherrypy.HTTPError(400, 'Can only create a instance with a image in the following state: %s'.format(
+                ResourceState.Created))
 
         flavor = Flavor.get(request.flavor_id)
         if flavor is None:
@@ -82,6 +95,8 @@ class InstanceRouter(Router):
                     request.service_account_id))
         else:
             service_account = ServiceAccount.get_by_name(project, 'default')
+            if service_account is None:
+                raise cherrypy.HTTPError(404, 'Could not find a default service account to attach to the instance.')
 
         network_port = NetworkPort()
         network_port.project = project
