@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 from kubernetes import config, client
 from kubernetes.client import Configuration
 
+from deli.kubernetes.resources.v1alpha1.flavor.controller import FlavorController
+from deli.kubernetes.resources.v1alpha1.flavor.model import Flavor
 from deli.kubernetes.resources.v1alpha1.image.controller import ImageController
 from deli.kubernetes.resources.v1alpha1.image.model import Image
 from deli.kubernetes.resources.v1alpha1.instance.controller import InstanceController
@@ -111,6 +113,8 @@ class RunManager(Daemon):
         Image.wait_for_crd()
         ServiceAccount.create_crd()
         ServiceAccount.wait_for_crd()
+        Flavor.create_crd()
+        Flavor.wait_for_crd()
         Instance.create_crd()
         Instance.wait_for_crd()
         Keypair.create_crd()
@@ -127,6 +131,7 @@ class RunManager(Daemon):
         self.launch_controller(NetworkPortController(1, 30))
         self.launch_controller(ImageController(1, 30, vmware))
         self.launch_controller(ServiceAccountController(1, 30))
+        self.launch_controller(FlavorController(1, 30))
         self.launch_controller(InstanceController(1, 30, vmware, args.menu_url))
         self.launch_controller(KeypairController(1, 30))
         return 0

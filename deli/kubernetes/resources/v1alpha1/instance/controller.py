@@ -97,12 +97,18 @@ class InstanceController(ModelController):
 
                 vmware_image = self.vmware.get_image(vmware_client, image.file_name, datacenter)
 
+                image_size = math.ceil(self.vmware.get_disk_size(vmware_image) / (1024 ** 3))
+                if image_size > model.disk:
+                    model.error_message = "Requested image requires a disk size of at least %s GB" % image_size
+                    return
+
                 old_vm = self.vmware.get_vm(vmware_client, str(model.id), datacenter)
                 if old_vm is not None:
                     self.logger.info(
                         "A backing for the vm %s / %s already exists so it is going to be deleted".format(
                             model.project.id,
                             model.id))
+                    self.vmware.power_off_vm(vmware_client, old_vm, hard=True)
                     self.vmware.delete_vm(vmware_client, old_vm)
 
                 port_group = self.vmware.get_port_group(vmware_client, network.port_group, datacenter)
@@ -117,7 +123,9 @@ class InstanceController(ModelController):
                                                        cluster=cluster,
                                                        datastore=datastore,
                                                        folder=folder,
-                                                       port_group=port_group)
+                                                       port_group=port_group,
+                                                       vcpus=model.vcpus,
+                                                       ram=model.ram)
                 model.task = VMTask.BUILDING
                 model.task_kwargs = {"task_key": create_vm_task.info.key}
         elif model.task == VMTask.BUILDING:
@@ -130,6 +138,7 @@ class InstanceController(ModelController):
                         return
                     datacenter = self.vmware.get_datacenter(vmware_client, model.region.datacenter)
                     vmware_vm = self.vmware.get_vm(vmware_client, str(model.id), datacenter)
+                    self.vmware.resize_root_disk(vmware_client, model.disk, vmware_vm)
                     self.vmware.setup_serial_connection(vmware_client, self.vspc_url, vmware_vm)
                     self.vmware.power_on_vm(vmware_client, vmware_vm)
                     model.task = None
@@ -309,10 +318,10 @@ class InstanceController(ModelController):
                 continue
             host = vm.runtime.host.name
             if host not in used_resources:
-                used_resources[host] = (instance.cores, instance.ram)
+                used_resources[host] = (instance.vcpus, instance.ram)
             else:
                 used_cores, used_ram = used_resources[host]
-                used_cores += instance.cores
+                used_cores += instance.vcpus
                 used_ram += instance.ram
                 used_resources[host] = (used_cores, used_ram)
 
@@ -326,7 +335,7 @@ class InstanceController(ModelController):
             else:
                 available_cores = total_cores
                 available_ram = total_ram
-            if available_cores >= model.cores and available_ram >= model.ram:
+            if available_cores >= model.vcpus and available_ram >= model.ram:
                 return True
 
         return False

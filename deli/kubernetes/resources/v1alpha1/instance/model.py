@@ -4,6 +4,7 @@ import uuid
 from deli.kubernetes.resources.const import TAG_LABEL, REGION_LABEL, ZONE_LABEL, IMAGE_LABEL, NETWORK_LABEL, \
     NETWORK_PORT_LABEL, SERVICE_ACCOUNT_LABEL
 from deli.kubernetes.resources.model import ProjectResourceModel
+from deli.kubernetes.resources.v1alpha1.flavor.model import Flavor
 from deli.kubernetes.resources.v1alpha1.image.model import Image
 from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
 from deli.kubernetes.resources.v1alpha1.network.model import NetworkPort
@@ -37,8 +38,12 @@ class Instance(ProjectResourceModel):
             self._raw['metadata']['labels'][NETWORK_PORT_LABEL] = None
             self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL] = None
             self._raw['spec'] = {
-                'cores': 1,
-                'ram': 1024,
+                'flavor': {
+                    'id': None,
+                    'vcpus': 1,
+                    'ram': 1024,
+                    'disk': 20,
+                },
                 'keypairs': [],
             }
             self._raw['status']['task'] = {
@@ -164,20 +169,47 @@ class Instance(ProjectResourceModel):
         del self._raw['metadata']['labels'][TAG_LABEL + '/' + tag]
 
     @property
-    def cores(self):
-        return self._raw['spec']['cores']
+    def flavor_id(self):
+        if self._raw['spec']['flavor']['id'] is None:
+            return None
+        return uuid.UUID(self._raw['spec']['flavor']['id'])
 
-    @cores.setter
-    def cores(self, value):
-        self._raw['spec']['cores'] = value
+    @property
+    def flavor(self):
+        if self._raw['spec']['flavor']['id'] is None:
+            return None
+        return Flavor.get(self._raw['spec']['flavor']['id'])
+
+    @flavor.setter
+    def flavor(self, value):
+        self._raw['spec']['flavor']['id'] = str(value.id)
+        self.vcpus = value.vcpus
+        self.ram = value.ram
+        self.disk = value.disk
+
+    @property
+    def vcpus(self):
+        return self._raw['spec']['flavor']['vcpus']
+
+    @vcpus.setter
+    def vcpus(self, value):
+        self._raw['spec']['flavor']['vcpus'] = value
 
     @property
     def ram(self):
-        return self._raw['spec']['ram']
+        return self._raw['spec']['flavor']['ram']
 
     @ram.setter
     def ram(self, value):
-        self._raw['spec']['ram'] = value
+        self._raw['spec']['flavor']['ram'] = value
+
+    @property
+    def disk(self):
+        return self._raw['spec']['flavor']['disk']
+
+    @disk.setter
+    def disk(self, value):
+        self._raw['spec']['flavor']['disk'] = value
 
     @property
     def keypair_ids(self):

@@ -54,6 +54,32 @@ POLICIES = [
         ]
     },
 
+    # Flavors
+    {
+        "name": "flavors:create",
+        "description": "Ability to create a flavor",
+    },
+    {
+        "name": "flavors:get",
+        "description": "Ability to get a flavor",
+        "tags": [
+            "viewer",
+            "service_account"
+        ]
+    },
+    {
+        "name": "flavors:list",
+        "description": "Ability to list flavors",
+        "tags": [
+            "viewer",
+            "service_account"
+        ]
+    },
+    {
+        "name": "flavors:delete",
+        "description": "Ability to delete a flavor",
+    },
+
     # Regions
     {
         "name": "regions:create",

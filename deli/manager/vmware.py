@@ -43,7 +43,7 @@ class VMWare(object):
         return self.get_obj(vmware_client, vim.dvs.DistributedVirtualPortgroup, port_group_name,
                             folder=datacenter.networkFolder)
 
-    def create_vm(self, vm_name, image, cluster, datastore, folder, port_group):
+    def create_vm(self, vm_name, image, cluster, datastore, folder, port_group, vcpus, ram):
 
         relospec = vim.vm.RelocateSpec()
         relospec.datastore = datastore
@@ -71,8 +71,8 @@ class VMWare(object):
         nic.device.connectable.allowGuestControl = True
 
         vmconf = vim.vm.ConfigSpec()
-        vmconf.numCPUs = 1  # TODO: allow customization of these
-        vmconf.memoryMB = 1024
+        vmconf.numCPUs = vcpus  # TODO: allow customization of these
+        vmconf.memoryMB = ram
         vmconf.deviceChange = [nic]
 
         vmconf.bootOptions = vim.vm.BootOptions()
@@ -93,30 +93,35 @@ class VMWare(object):
         else:
             task = image.Clone(name=vm_name, spec=clonespec)
 
-        # TODO: uncomment when we can specify disk size
-        # # Resize Storage Drive
-        # virtual_disk_device = None
-        #
-        # # Find the disk device
-        # for dev in vm.config.hardware.device:
-        #     if isinstance(dev, vim.vm.device.VirtualDisk) and dev.deviceInfo.label == "Hard disk 1":
-        #         virtual_disk_device = dev
-        #         break
-        #
-        # virtual_disk_spec = vim.vm.device.VirtualDeviceSpec()
-        # virtual_disk_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.edit
-        # virtual_disk_spec.device = virtual_disk_device
-        # virtual_disk_spec.device.capacityInBytes = 100 * (1024 ** 3) # 100GB disk
-        #
-        # spec = vim.vm.ConfigSpec()
-        # spec.deviceChange = [virtual_disk_spec]
-        # task = vm.ReconfigVM_Task(spec=spec)
-        # self.wait_for_tasks([task])
-
         return task
 
-    def setup_serial_connection(self, vmware_client, vspc_address, vm):
+    def get_disk_size(self, vm):
+        for dev in vm.config.hardware.device:
+            if isinstance(dev, vim.vm.device.VirtualDisk) and dev.deviceInfo.label == "Hard disk 1":
+                return dev.capacityInBytes
 
+        return 0
+
+    def resize_root_disk(self, vmware_client, new_size, vm):
+        virtual_disk_device = None
+
+        # Find the disk device
+        for dev in vm.config.hardware.device:
+            if isinstance(dev, vim.vm.device.VirtualDisk) and dev.deviceInfo.label == "Hard disk 1":
+                virtual_disk_device = dev
+                break
+
+        virtual_disk_spec = vim.vm.device.VirtualDeviceSpec()
+        virtual_disk_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.edit
+        virtual_disk_spec.device = virtual_disk_device
+        virtual_disk_spec.device.capacityInBytes = new_size * (1024 ** 3)
+
+        spec = vim.vm.ConfigSpec()
+        spec.deviceChange = [virtual_disk_spec]
+        task = vm.ReconfigVM_Task(spec=spec)
+        self.wait_for_tasks(vmware_client, [task])
+
+    def setup_serial_connection(self, vmware_client, vspc_address, vm):
         serial_device = None
         # Find the serial device
         for dev in vm.config.hardware.device:

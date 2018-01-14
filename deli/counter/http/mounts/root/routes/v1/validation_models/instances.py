@@ -16,6 +16,13 @@ class RequestCreateInstance(Model):
     keypair_ids = ListType(UUIDType, default=list)
     tags = DictType(KubeString, default=dict)
 
+    flavor_id = UUIDType(required=True)
+    disk = IntType()
+
+    def validate_disk(self, data, value):
+        if value is not None and value != 0:
+            IntType(min_value=10).validate_range(value)
+
 
 class ResponseInstance(Model):
     # Simplified instance model, used to speed up list times
@@ -29,6 +36,12 @@ class ResponseInstance(Model):
     keypair_ids = ListType(UUIDType, default=list)
     state = EnumType(ResourceState, required=True)
     power_state = EnumType(VMPowerState, required=True)
+
+    flavor_id = UUIDType(required=True)
+    vcpus = IntType(required=True)
+    ram = IntType(required=True)
+    disk = IntType(required=True)
+
     task = EnumType(VMTask)
     tags = DictType(KubeString, default=dict)
     error_message = StringType()
@@ -56,6 +69,14 @@ class ResponseInstance(Model):
             instance_model.error_message = instance.error_message
 
         instance_model.power_state = instance.power_state
+
+        if instance.flavor_id is not None:
+            instance_model.flavor_id = instance.flavor_id
+
+        instance_model.vcpus = instance.vcpus
+        instance_model.ram = instance.ram
+        instance_model.disk = instance.disk
+
         instance_model.task = instance.task
 
         instance_model.tags = instance.tags

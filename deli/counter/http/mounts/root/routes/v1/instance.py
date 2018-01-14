@@ -11,6 +11,7 @@ from deli.http.router import Router
 from deli.kubernetes.resources.const import REGION_LABEL, IMAGE_LABEL, ZONE_LABEL
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.project import Project
+from deli.kubernetes.resources.v1alpha1.flavor.model import Flavor
 from deli.kubernetes.resources.v1alpha1.image.model import Image
 from deli.kubernetes.resources.v1alpha1.instance.model import Instance, VMPowerState
 from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
@@ -62,6 +63,10 @@ class InstanceRouter(Router):
         if image.region.id != region.id:
             raise cherrypy.HTTPError(409, 'The requested image is not within the requested region')
 
+        flavor = Flavor.get(request.flavor_id)
+        if flavor is None:
+            raise cherrypy.HTTPError(404, 'A flavor with the requested id does not exist.')
+
         keypairs = []
         for keypair_id in request.keypair_ids:
             keypair = Keypair.get(project, keypair_id)
@@ -95,6 +100,11 @@ class InstanceRouter(Router):
         instance.keypairs = keypairs
         for k, v in request.tags.items():
             instance.add_tag(k, v)
+
+        instance.flavor = flavor
+        if request.disk is not None:
+            instance.disk = request.disk
+
         instance.create()
 
         return ResponseInstance.from_database(instance)
