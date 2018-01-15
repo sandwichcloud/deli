@@ -141,6 +141,9 @@ class ImageRouter(Router):
         if project is None:
             raise cherrypy.HTTPError(404, 'A project with the requested id does not exist.')
 
+        if image.project_id == project.id:
+            raise cherrypy.HTTPError(409, 'Cannot add the owning project as a member.')
+
         if image.is_member(request.project_id):
             raise cherrypy.HTTPError(409, 'A project with the requested id is already a member.')
 
