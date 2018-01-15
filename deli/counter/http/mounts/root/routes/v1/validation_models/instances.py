@@ -3,6 +3,7 @@ from schematics.types import UUIDType, IntType, DictType, ListType, BooleanType,
 
 from deli.http.schematics.types import KubeString, EnumType, ArrowType, KubeName
 from deli.kubernetes.resources.model import ResourceState
+from deli.kubernetes.resources.v1alpha1.image.model import ImageVisibility
 from deli.kubernetes.resources.v1alpha1.instance.model import Instance, VMPowerState, VMTask
 
 
@@ -98,6 +99,7 @@ class ParamsListInstance(Model):
 
 class RequestInstanceImage(Model):
     name = KubeName(required=True)
+    visibility = EnumType(ImageVisibility, default=ImageVisibility.PRIVATE)
 
 
 class RequestInstancePowerOffRestart(Model):

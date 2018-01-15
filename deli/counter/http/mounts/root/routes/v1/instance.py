@@ -12,7 +12,7 @@ from deli.kubernetes.resources.const import REGION_LABEL, IMAGE_LABEL, ZONE_LABE
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.flavor.model import Flavor
-from deli.kubernetes.resources.v1alpha1.image.model import Image
+from deli.kubernetes.resources.v1alpha1.image.model import Image, ImageVisibility
 from deli.kubernetes.resources.v1alpha1.instance.model import Instance, VMPowerState
 from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
 from deli.kubernetes.resources.v1alpha1.network.model import NetworkPort, Network
@@ -67,9 +67,15 @@ class InstanceRouter(Router):
             raise cherrypy.HTTPError(400, 'Can only create a instance with a network in the following state: %s'.format(
                 ResourceState.Created))
 
-        image = Image.get(project, request.image_id)
+        image: Image = Image.get(project, request.image_id)
         if image is None:
             raise cherrypy.HTTPError(404, 'An image with the requested id does not exist.')
+        if image.visibility == ImageVisibility.PRIVATE:
+            if image.project_id != project.id:
+                raise cherrypy.HTTPError(404, 'An image with the requested id does not exist.')
+        elif image.visibility == ImageVisibility.SHARED:
+            if image.is_member(project.id) is False:
+                raise cherrypy.HTTPError(409, 'The requested image is not shared with the current project.')
         if image.region.id != region.id:
             raise cherrypy.HTTPError(409, 'The requested image is not within the requested region')
         if image.state != ResourceState.Created:
@@ -190,7 +196,7 @@ class InstanceRouter(Router):
     @cherrypy.tools.project_scope()
     @cherrypy.tools.model_params(cls=ParamsInstance)
     @cherrypy.tools.resource_object(id_param="instance_id", cls=Instance)
-    @cherrypy.tools.enforce_policy(policy_name="instances:delete")
+    @cherrypy.tools.enforce_policy(policy_name="nstances:action:stop")
     def action_start(self, **_):
         cherrypy.response.status = 202
 
@@ -210,7 +216,7 @@ class InstanceRouter(Router):
     @cherrypy.tools.model_params(cls=ParamsInstance)
     @cherrypy.tools.model_in(cls=RequestInstancePowerOffRestart)
     @cherrypy.tools.resource_object(id_param="instance_id", cls=Instance)
-    @cherrypy.tools.enforce_policy(policy_name="instances:delete")
+    @cherrypy.tools.enforce_policy(policy_name="nstances:action:start")
     def action_stop(self, **_):
         request: RequestInstancePowerOffRestart = cherrypy.request.model
         cherrypy.response.status = 202
@@ -231,7 +237,7 @@ class InstanceRouter(Router):
     @cherrypy.tools.model_params(cls=ParamsInstance)
     @cherrypy.tools.model_in(cls=RequestInstancePowerOffRestart)
     @cherrypy.tools.resource_object(id_param="instance_id", cls=Instance)
-    @cherrypy.tools.enforce_policy(policy_name="instances:delete")
+    @cherrypy.tools.enforce_policy(policy_name="nstances:action:restart")
     def action_restart(self, **_):
         request: RequestInstancePowerOffRestart = cherrypy.request.model
         cherrypy.response.status = 202
@@ -253,7 +259,7 @@ class InstanceRouter(Router):
     @cherrypy.tools.model_in(cls=RequestInstanceImage)
     @cherrypy.tools.model_out(cls=ResponseImage)
     @cherrypy.tools.resource_object(id_param="instance_id", cls=Instance)
-    @cherrypy.tools.enforce_policy(policy_name="instances:delete")
+    @cherrypy.tools.enforce_policy(policy_name="nstances:action:image")
     def action_image(self, **_):
         project: Project = cherrypy.request.project
         request: RequestInstanceImage = cherrypy.request.model
@@ -270,6 +276,9 @@ class InstanceRouter(Router):
         if Image.get_by_name(project, request.name) is not None:
             raise cherrypy.HTTPError(400, 'An image with the requested name already exists.')
 
-        image = instance.action_image(request.name)
+        if request.visibility == ImageVisibility.PUBLIC:
+            self.mount.enforce_policy("instances:action:image:public")
+
+        image = instance.action_image(request.name, request.visibility)
 
         return ResponseImage.from_database(image)

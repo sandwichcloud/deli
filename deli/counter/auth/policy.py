@@ -189,10 +189,7 @@ POLICIES = [
     # Images
     {
         "name": "images:create",
-        "description": "Ability to create an image",
-        "tags": [
-            "project_member"
-        ]
+        "description": "Ability to create an image"
     },
     {
         "name": "images:create:public",
@@ -231,6 +228,27 @@ POLICIES = [
     {
         "name": "images:action:unlock",
         "description": "Ability to unlock an image",
+        "tags": [
+            "project_member"
+        ]
+    },
+    {
+        "name": "images:members:add",
+        "description": "Ability to add a member to an image",
+        "tags": [
+            "project_member"
+        ]
+    },
+    {
+        "name": "images:members:list",
+        "description": "Ability to list image members",
+        "tags": [
+            "project_member"
+        ]
+    },
+    {
+        "name": "images:members:delete",
+        "description": "Ability to delete a member from an image",
         "tags": [
             "project_member"
         ]

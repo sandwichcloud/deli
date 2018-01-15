@@ -2,6 +2,7 @@ from go_defer import with_defer, defer
 
 from deli.kubernetes.controller import ModelController
 from deli.kubernetes.resources.model import ResourceState
+from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.image.model import Image
 
 
@@ -64,6 +65,16 @@ class ImageController(ModelController):
         if region.state != ResourceState.Created:
             model.delete()
             return
+
+        project = model.project
+        if project is None:
+            model.delete()
+            return
+
+        for member_id in model.member_ids():
+            if Project.get(member_id) is None:
+                model.remove_member(member_id)
+                model.save()
 
     def to_delete(self, model):
         model.state = ResourceState.Deleting
