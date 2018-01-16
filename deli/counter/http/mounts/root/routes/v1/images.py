@@ -3,11 +3,11 @@ import uuid
 import cherrypy
 
 from deli.counter.http.mounts.root.routes.v1.validation_models.images import RequestCreateImage, ResponseImage, \
-    ParamsImage, ParamsListImage, ParamsImageMember, RequestAddMember, ResponseImageMember
+    ParamsImage, ParamsListImage, ParamsImageMember, RequestAddMember, ResponseImageMember, RequestImageVisibility
 from deli.http.request_methods import RequestMethods
 from deli.http.route import Route
 from deli.http.router import Router
-from deli.kubernetes.resources.const import NAME_LABEL, PROJECT_LABEL, REGION_LABEL, IMAGE_VISIBILITY_LABEL, \
+from deli.kubernetes.resources.const import REGION_LABEL, IMAGE_VISIBILITY_LABEL, \
     IMAGE_MEMBER_LABEL
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.project import Project
@@ -28,9 +28,8 @@ class ImageRouter(Router):
         request: RequestCreateImage = cherrypy.request.model
         project: Project = cherrypy.request.project
 
-        images = Image.list(
-            label_selector=PROJECT_LABEL + "=" + str(project.id) + "," + NAME_LABEL + "=" + request.name)
-        if len(images) > 0:
+        image = Image.get_by_name(request.name, project=project)
+        if image is not None:
             raise cherrypy.HTTPError(400, 'An image with the requested name already exists.')
 
         region = Region.get(request.region_id)
@@ -43,15 +42,11 @@ class ImageRouter(Router):
 
         # TODO: check duplicate file name
 
-        if request.visibility == ImageVisibility.PUBLIC:
-            self.mount.enforce_policy("images:create:public")
-
         image = Image()
         image.name = request.name
         image.file_name = request.file_name
         image.project = project
         image.region = region
-        image.visibility = request.visibility
         image.create()
 
         return ResponseImage.from_database(image)
@@ -67,10 +62,8 @@ class ImageRouter(Router):
 
         if image.visibility == ImageVisibility.PRIVATE:
             if image.project_id != cherrypy.request.project.id:
-                raise cherrypy.HTTPError(404, "The resource could not be found.")
-        elif image.visibility == ImageVisibility.SHARED:
-            if image.is_member(cherrypy.request.project.id) is False:
-                raise cherrypy.HTTPError(409, 'The requested image is not shared with the current project.')
+                if image.is_member(cherrypy.request.project.id) is False:
+                    raise cherrypy.HTTPError(404, "The resource could not be found.")
 
         return ResponseImage.from_database(image)
 
@@ -86,9 +79,6 @@ class ImageRouter(Router):
 
         if visibility == ImageVisibility.PRIVATE:
             kwargs['label_selector'].append(IMAGE_VISIBILITY_LABEL + '=' + ImageVisibility.PRIVATE.value)
-            kwargs['label_selector'].append(PROJECT_LABEL + '=' + str(cherrypy.request.project.id))
-        elif visibility == ImageVisibility.SHARED:
-            kwargs['label_selector'].append(IMAGE_VISIBILITY_LABEL + '=' + ImageVisibility.SHARED.value)
             kwargs['label_selector'].append(IMAGE_MEMBER_LABEL + "/" + str(cherrypy.request.project.id) + "=1")
         else:
             kwargs['label_selector'].append(IMAGE_VISIBILITY_LABEL + '=' + ImageVisibility.PUBLIC.value)
@@ -124,18 +114,47 @@ class ImageRouter(Router):
 
         image.delete()
 
+    @Route(route='{image_id}/action/visibility', methods=[RequestMethods.PUT])
+    @cherrypy.tools.project_scope()
+    @cherrypy.tools.model_params(cls=ParamsImage)
+    @cherrypy.tools.model_in(cls=RequestImageVisibility)
+    @cherrypy.tools.resource_object(id_param="image_id", cls=Image)
+    @cherrypy.tools.enforce_policy(policy_name="images:action:visibility")
+    def action_visibility(self, **_):
+        cherrypy.response.status = 204
+        image: Image = cherrypy.request.resource_object
+        request: RequestImageVisibility = cherrypy.request.model
+
+        if image.project_id != cherrypy.request.project.id:
+            raise cherrypy.HTTPError(404, "The resource could not be found.")
+
+        if request.public:
+            self.mount.enforce_policy("images:action:visibility:public")
+            if image.visibility == ImageVisibility.PUBLIC:
+                raise cherrypy.HTTPError(409, 'The requested image is already public')
+        else:
+            if image.visibility == ImageVisibility.PRIVATE:
+                raise cherrypy.HTTPError(409, 'The requested image is already private')
+
+        image.visibility = ImageVisibility.PUBLIC if request.public else ImageVisibility.PRIVATE
+        image.save()
+
     @Route(route='{image_id}/members', methods=[RequestMethods.POST])
     @cherrypy.tools.project_scope()
     @cherrypy.tools.model_params(cls=ParamsImage)
     @cherrypy.tools.model_in(cls=RequestAddMember)
     @cherrypy.tools.resource_object(id_param="image_id", cls=Image)
     @cherrypy.tools.enforce_policy(policy_name="images:members:add")
-    def add_member(self):
+    def add_member(self, **_):
         cherrypy.response.status = 204
         request: RequestAddMember = cherrypy.request.model
         image: Image = cherrypy.request.resource_object
-        if image.visibility != ImageVisibility.SHARED:
-            raise cherrypy.HTTPError(409, 'Cannot add a member to a non-shared image')
+
+        if image.project_id != cherrypy.request.project.id:
+            raise cherrypy.HTTPError(404, "The resource could not be found.")
+
+        if image.visibility == ImageVisibility.PUBLIC:
+            raise cherrypy.HTTPError(409, 'Cannot add a member to a public image')
 
         project = Project.get(request.project_id)
         if project is None:
@@ -158,8 +177,12 @@ class ImageRouter(Router):
     @cherrypy.tools.enforce_policy(policy_name="images:members:list")
     def list_members(self, **_):
         image: Image = cherrypy.request.resource_object
-        if image.visibility != ImageVisibility.SHARED:
-            raise cherrypy.HTTPError(409, 'Cannot list members of a non-shared image')
+
+        if image.project_id != cherrypy.request.project.id:
+            raise cherrypy.HTTPError(404, "The resource could not be found.")
+
+        if image.visibility == ImageVisibility.PUBLIC:
+            raise cherrypy.HTTPError(409, 'Cannot list members of a public image')
 
         members = []
 
@@ -178,8 +201,12 @@ class ImageRouter(Router):
     def delete_member(self, project_id, **_):
         cherrypy.response.status = 204
         image: Image = cherrypy.request.resource_object
-        if image.visibility != ImageVisibility.SHARED:
-            raise cherrypy.HTTPError(409, 'Cannot delete a member from a non-shared image')
+
+        if image.project_id != cherrypy.request.project.id:
+            raise cherrypy.HTTPError(404, "The resource could not be found.")
+
+        if image.visibility == ImageVisibility.PUBLIC:
+            raise cherrypy.HTTPError(409, 'Cannot delete a member from a public image')
 
         project = Project.get(project_id)
         if project is None:

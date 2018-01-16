@@ -192,10 +192,6 @@ POLICIES = [
         "description": "Ability to create an image"
     },
     {
-        "name": "images:create:public",
-        "description": "Ability to create a public image"
-    },
-    {
         "name": "images:get",
         "description": "Ability to get an image",
         "tags": [
@@ -217,6 +213,17 @@ POLICIES = [
         "tags": [
             "project_member"
         ]
+    },
+    {
+        "name": "images:action:visibility",
+        "description": "Ability to change the image visibility",
+        "tags": [
+            "project_member"
+        ]
+    },
+    {
+        "name": "images:action:visibility:public",
+        "description": "Ability to change the image visibility to public"
     },
     {
         "name": "images:action:lock",
@@ -312,10 +319,6 @@ POLICIES = [
         "tags": [
             "project_member"
         ]
-    },
-    {
-        "name": "instances:action:image:public",
-        "description": "Ability to create a public image from an instance"
     },
     {
         "name": "instances:action:reset_state",

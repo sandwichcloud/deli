@@ -252,13 +252,12 @@ class Instance(ProjectResourceModel):
         }
         self.save()
 
-    def action_image(self, image_name, visibility):
+    def action_image(self, image_name):
         image = Image()
         image.project = self.project
         image.region = self.region
         image.name = image_name
         image.file_name = None
-        image.visibility = visibility
         image.create()
 
         self.task = VMTask.IMAGING

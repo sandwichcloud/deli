@@ -1,5 +1,5 @@
 from schematics import Model
-from schematics.types import UUIDType, StringType, IntType
+from schematics.types import UUIDType, StringType, IntType, BooleanType
 
 from deli.http.schematics.types import KubeName, EnumType, ArrowType
 from deli.kubernetes.resources.model import ResourceState
@@ -26,7 +26,6 @@ class RequestCreateImage(Model):
     name = KubeName(required=True, min_length=3)
     file_name = StringType(required=True)
     region_id = KubeName(required=True)
-    visibility = EnumType(ImageVisibility, default=ImageVisibility.PRIVATE)
 
 
 class RequestAddMember(Model):
@@ -35,6 +34,10 @@ class RequestAddMember(Model):
 
 class ResponseImageMember(Model):
     project_id = UUIDType(required=True)
+
+
+class RequestImageVisibility(Model):
+    public = BooleanType(required=True)
 
 
 class ResponseImage(Model):

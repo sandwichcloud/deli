@@ -72,10 +72,8 @@ class InstanceRouter(Router):
             raise cherrypy.HTTPError(404, 'An image with the requested id does not exist.')
         if image.visibility == ImageVisibility.PRIVATE:
             if image.project_id != project.id:
-                raise cherrypy.HTTPError(404, 'An image with the requested id does not exist.')
-        elif image.visibility == ImageVisibility.SHARED:
-            if image.is_member(project.id) is False:
-                raise cherrypy.HTTPError(409, 'The requested image is not shared with the current project.')
+                if image.is_member(project.id) is False:
+                    raise cherrypy.HTTPError(404, 'An image with the requested id does not exist.')
         if image.region.id != region.id:
             raise cherrypy.HTTPError(409, 'The requested image is not within the requested region')
         if image.state != ResourceState.Created:
@@ -273,12 +271,9 @@ class InstanceRouter(Router):
         if instance.power_state != VMPowerState.POWERED_OFF:
             raise cherrypy.HTTPError(400, 'Instance must be powered off.')
 
-        if Image.get_by_name(project, request.name) is not None:
+        if Image.get_by_name(request.name, project=project) is not None:
             raise cherrypy.HTTPError(400, 'An image with the requested name already exists.')
 
-        if request.visibility == ImageVisibility.PUBLIC:
-            self.mount.enforce_policy("instances:action:image:public")
-
-        image = instance.action_image(request.name, request.visibility)
+        image = instance.action_image(request.name)
 
         return ResponseImage.from_database(image)

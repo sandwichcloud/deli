@@ -1,7 +1,8 @@
 import enum
 import uuid
 
-from deli.kubernetes.resources.const import REGION_LABEL, IMAGE_VISIBILITY_LABEL, PROJECT_LABEL, IMAGE_MEMBER_LABEL
+from deli.kubernetes.resources.const import REGION_LABEL, IMAGE_VISIBILITY_LABEL, PROJECT_LABEL, IMAGE_MEMBER_LABEL, \
+    NAME_LABEL
 from deli.kubernetes.resources.model import GlobalResourceModel
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.region.model import Region
@@ -10,7 +11,6 @@ from deli.kubernetes.resources.v1alpha1.region.model import Region
 class ImageVisibility(enum.Enum):
     PUBLIC = 'PUBLIC'
     PRIVATE = 'PRIVATE'
-    SHARED = 'SHARED'
 
 
 class Image(GlobalResourceModel):
@@ -25,6 +25,16 @@ class Image(GlobalResourceModel):
                 'fileName': None
             }
 
+    @classmethod
+    def get_by_name(cls, name, project=None):
+        label_selector = [NAME_LABEL + "=" + name]
+        if project is not None:
+            label_selector.append(PROJECT_LABEL + "=" + str(project.id))
+        objs = cls.list(label_selector=",".join(label_selector))
+        if len(objs) == 0:
+            return None
+        return objs[0]
+
     @property
     def project_id(self):
         return uuid.UUID(self._raw['metadata']['labels'][PROJECT_LABEL])
@@ -36,6 +46,7 @@ class Image(GlobalResourceModel):
     @project.setter
     def project(self, value):
         self._raw['metadata']['labels'][PROJECT_LABEL] = str(value.id)
+        self.add_member(value.id)
 
     @property
     def region_id(self):
@@ -63,6 +74,17 @@ class Image(GlobalResourceModel):
 
     @visibility.setter
     def visibility(self, value):
+
+        if value == ImageVisibility.PUBLIC:
+            # We are now public so clear members
+            for label in list(self._raw['metadata']['labels']):
+                if label.startswith(IMAGE_MEMBER_LABEL) is False:
+                    continue
+                del self._raw['metadata']['labels'][label]
+        elif value == ImageVisibility.PRIVATE:
+            # We are now private so add our project back as a member
+            self.add_member(self.project_id)
+
         self._raw['metadata']['labels'][IMAGE_VISIBILITY_LABEL] = value.value
 
     def add_member(self, project_id):
@@ -77,7 +99,10 @@ class Image(GlobalResourceModel):
         for label in self._raw['metadata']['labels']:
             if label.startswith(IMAGE_MEMBER_LABEL) is False:
                 continue
-            member_ids.append(label.split("/")[1])
+            member_id = label.split("/")[1]
+            if member_id == self.project_id:
+                continue
+            member_ids.append(member_id)
 
         return member_ids
 
