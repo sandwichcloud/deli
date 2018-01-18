@@ -185,6 +185,62 @@ POLICIES = [
             "project_member"
         ]
     },
+    # Volumes
+    {
+        "name": "volumes:create",
+        "description": "Ability to create a volume"
+    },
+    {
+        "name": "volumes:get",
+        "description": "Ability to get a volume",
+        "tags": [
+            "project_member",
+            "service_account"
+        ]
+    },
+    {
+        "name": "volumes:list",
+        "description": "Ability to list volumes",
+        "tags": [
+            "project_member",
+            "service_account"
+        ]
+    },
+    {
+        "name": "volumes:delete",
+        "description": "Ability to delete a volume",
+        "tags": [
+            "project_member"
+        ]
+    },
+    {
+        "name": "volumes:action:attach",
+        "description": "Ability to attach a volume to an instance",
+        "tags": [
+            "project_member"
+        ]
+    },
+    {
+        "name": "volumes:action:detach",
+        "description": "Ability to detach a volume from an instance",
+        "tags": [
+            "project_member"
+        ]
+    },
+    {
+        "name": "volumes:action:grow",
+        "description": "Ability to grow a volume",
+        "tags": [
+            "project_member"
+        ]
+    },
+    {
+        "name": "volumes:action:clone",
+        "description": "Ability to clone a volume",
+        "tags": [
+            "project_member"
+        ]
+    },
 
     # Images
     {

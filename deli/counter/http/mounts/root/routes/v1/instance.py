@@ -8,7 +8,7 @@ from deli.counter.http.mounts.root.routes.v1.validation_models.instances import 
 from deli.http.request_methods import RequestMethods
 from deli.http.route import Route
 from deli.http.router import Router
-from deli.kubernetes.resources.const import REGION_LABEL, IMAGE_LABEL, ZONE_LABEL
+from deli.kubernetes.resources.const import REGION_LABEL, IMAGE_LABEL, ZONE_LABEL, ATTACHED_TO_LABEL
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.flavor.model import Flavor
@@ -18,6 +18,7 @@ from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
 from deli.kubernetes.resources.v1alpha1.network.model import NetworkPort, Network
 from deli.kubernetes.resources.v1alpha1.region.model import Region
 from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
+from deli.kubernetes.resources.v1alpha1.volume.model import Volume
 from deli.kubernetes.resources.v1alpha1.zone.model import Zone
 
 
@@ -67,7 +68,7 @@ class InstanceRouter(Router):
             raise cherrypy.HTTPError(400, 'Can only create a instance with a network in the following state: %s'.format(
                 ResourceState.Created))
 
-        image: Image = Image.get(project, request.image_id)
+        image: Image = Image.get(request.image_id)
         if image is None:
             raise cherrypy.HTTPError(404, 'An image with the requested id does not exist.')
         if image.visibility == ImageVisibility.PRIVATE:
@@ -182,9 +183,10 @@ class InstanceRouter(Router):
         cherrypy.response.status = 204
 
         instance: Instance = cherrypy.request.resource_object
+        if instance.task is not None:
+            raise cherrypy.HTTPError(400, "Please wait for the current task to finish.")
         if instance.state == ResourceState.ToDelete or instance.state == ResourceState.Deleting:
             raise cherrypy.HTTPError(400, "Instance is already being deleting")
-
         if instance.state == ResourceState.Deleted:
             raise cherrypy.HTTPError(400, "Instance has already been deleted")
 
@@ -273,6 +275,10 @@ class InstanceRouter(Router):
 
         if Image.get_by_name(request.name, project=project) is not None:
             raise cherrypy.HTTPError(400, 'An image with the requested name already exists.')
+
+        attached_volumes = Volume.list(project, label_selector=ATTACHED_TO_LABEL + "=" + str(instance.id))
+        if len(attached_volumes) > 0:
+            raise cherrypy.HTTPError(409, 'Cannot create an image while volumes are attached.')
 
         image = instance.action_image(request.name)
 

@@ -22,11 +22,10 @@ class RequestCreateInstance(Model):
 
     def validate_disk(self, data, value):
         if value is not None and value != 0:
-            IntType(min_value=10).validate_range(value)
+            IntType(min_value=5).validate_range(value)
 
 
 class ResponseInstance(Model):
-    # Simplified instance model, used to speed up list times
     id = UUIDType(required=True)
     name = KubeName(required=True, min_length=3)
     image_id = UUIDType()

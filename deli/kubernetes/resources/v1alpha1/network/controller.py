@@ -101,12 +101,12 @@ class NetworkPortController(ModelController):
 
     @with_defer
     def creating(self, model: NetworkPort):
-        defer(model.save)
-
         network: Network = model.network
         if network is None:
-            model.state = ResourceState.ToDelete
+            model.delete()
             return
+
+        defer(model.save)
 
         usable_addresses = []
         start_host = network.pool_start
@@ -153,7 +153,6 @@ class NetworkPortController(ModelController):
         model.save()
 
     def deleting(self, model):
-
         instances = Instance.list_all(label_selector=NETWORK_PORT_LABEL + "=" + str(model.id))
         if len(instances) > 0:
             # There is still an instance with the network port so lets wait

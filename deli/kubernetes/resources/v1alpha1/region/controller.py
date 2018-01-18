@@ -6,6 +6,7 @@ from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.v1alpha1.image.model import Image
 from deli.kubernetes.resources.v1alpha1.instance.model import Instance
 from deli.kubernetes.resources.v1alpha1.region.model import Region
+from deli.kubernetes.resources.v1alpha1.zone.model import Zone
 
 
 class RegionController(ModelController):
@@ -68,7 +69,11 @@ class RegionController(ModelController):
 
     def can_delete(self, model):
         # These resources need the region to exist to successfully delete
-        images = Image.list_all(label_selector=REGION_LABEL + "=" + str(model.id))
+        zones = Zone.list(label_selector=REGION_LABEL + "=" + str(model.id))
+        if len(zones) > 0:
+            return False
+
+        images = Image.list(label_selector=REGION_LABEL + "=" + str(model.id))
         if len(images) > 0:
             return False
 

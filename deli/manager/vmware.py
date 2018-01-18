@@ -43,7 +43,54 @@ class VMWare(object):
         return self.get_obj(vmware_client, vim.dvs.DistributedVirtualPortgroup, port_group_name,
                             folder=datacenter.networkFolder)
 
-    def create_vm(self, vm_name, image, cluster, datastore, folder, port_group, vcpus, ram):
+    def get_disk(self, vmware_client, disk_id, datastore):
+        vStorageManager = vmware_client.RetrieveContent().vStorageObjectManager
+        return vStorageManager.RetrieveVStorageObject(id=disk_id, datastore=datastore)
+
+    def create_disk(self, vmware_client, disk_name, size, datastore):
+        vStorageManager = vmware_client.RetrieveContent().vStorageObjectManager
+
+        spec = vim.vslm.CreateSpec()
+        spec.name = disk_name
+        spec.capacityInMB = size * 1024
+        spec.backingSpec = vim.vslm.CreateSpec.DiskFileBackingSpec()
+        spec.backingSpec.provisioningType = "thin"
+        spec.backingSpec.datastore = datastore
+
+        task = vStorageManager.CreateDisk_Task(spec)
+        self.wait_for_tasks(vmware_client, [task])
+        vStorageObject = task.info.result
+
+        return vStorageObject.config.id.id
+
+    def clone_disk(self, vmware_client, disk_name, disk_id, datastore):
+        vStorageManager = vmware_client.RetrieveContent().vStorageObjectManager
+
+        spec = vim.vslm.CloneSpec()
+        spec.name = disk_name
+        task = vStorageManager.CloneVStorageObject_Task(id=vim.vslm.ID(id=disk_id), datastore=datastore, spec=spec)
+        return task
+
+    def delete_disk(self, vmware_client, disk_id, datastore):
+        vStorageManager = vmware_client.RetrieveContent().vStorageObjectManager
+        task = vStorageManager.DeleteVStorageObject_Task(id=vim.vslm.ID(id=disk_id), datastore=datastore)
+        self.wait_for_tasks(vmware_client, [task])
+
+    def grow_disk(self, vmware_client, disk_id, size, datastore):
+        vStorageManager = vmware_client.RetrieveContent().vStorageObjectManager
+        task = vStorageManager.ExtendDisk_Task(id=vim.vslm.ID(id=disk_id), datastore=datastore,
+                                               newCapacityInMB=size * 1024)
+        self.wait_for_tasks(vmware_client, [task])
+
+    def attach_disk(self, vmware_client, disk_id, datastore, vm):
+        task = vm.AttachDisk_Task(diskId=vim.vslm.ID(id=disk_id), datastore=datastore)
+        self.wait_for_tasks(vmware_client, [task])
+
+    def detach_disk(self, vmware_client, disk_id, vm):
+        task = vm.DetachDisk_Task(diskId=vim.vslm.ID(id=disk_id))
+        self.wait_for_tasks(vmware_client, [task])
+
+    def create_vm_from_image(self, vm_name, image, cluster, datastore, folder, port_group, vcpus, ram):
 
         relospec = vim.vm.RelocateSpec()
         relospec.datastore = datastore
@@ -125,7 +172,7 @@ class VMWare(object):
         serial_device = None
         # Find the serial device
         for dev in vm.config.hardware.device:
-            # Label may change if we add another port for logging
+            # Label may change if we add another port (i.e for logging)
             if isinstance(dev, vim.vm.device.VirtualSerialPort) and dev.deviceInfo.label == "Serial port 1":
                 serial_device = dev
                 break
@@ -189,9 +236,16 @@ class VMWare(object):
         vmconf = vim.vm.ConfigSpec()
         vmconf.numCPUs = 1
         vmconf.memoryMB = 128
+        vmconf.deviceChange = []
 
-        # The vm may have additional device customization (i.e more disks)
-        # How do we remove those devices and only keep the first disk?
+        # We don't want additional disks to be cloned with the VM so remove them
+        for dev in vm.config.hardware.device:
+            if isinstance(dev, vim.vm.device.VirtualDisk) and dev.deviceInfo.label.startswith("Hard disk") \
+                    and dev.deviceInfo.label.endswith("1") is False:
+                virtual_disk_spec = vim.vm.device.VirtualDeviceSpec()
+                virtual_disk_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.remove
+                virtual_disk_spec.device = dev
+                vmconf.deviceChange.append(virtual_disk_spec)
 
         # If the vm starts with a large disk there is no way to shrink it.
         # Hopefully it is thin provisioned...

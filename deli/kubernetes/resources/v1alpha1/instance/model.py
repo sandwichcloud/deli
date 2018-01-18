@@ -92,7 +92,7 @@ class Instance(ProjectResourceModel):
     def image(self):
         if self._raw['metadata']['labels'][IMAGE_LABEL] is None:
             return None
-        return Image.get(self.project, self._raw['metadata']['labels'][IMAGE_LABEL])
+        return Image.get(self._raw['metadata']['labels'][IMAGE_LABEL])
 
     @image.setter
     def image(self, value):

@@ -24,6 +24,8 @@ from deli.kubernetes.resources.v1alpha1.role.controller import GlobalRoleControl
 from deli.kubernetes.resources.v1alpha1.role.model import GlobalRole, ProjectRole
 from deli.kubernetes.resources.v1alpha1.service_account.controller import ServiceAccountController
 from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
+from deli.kubernetes.resources.v1alpha1.volume.controller import VolumeController
+from deli.kubernetes.resources.v1alpha1.volume.model import Volume
 from deli.kubernetes.resources.v1alpha1.zone.controller import ZoneController
 from deli.kubernetes.resources.v1alpha1.zone.model import Zone
 from deli.manager.vmware import VMWare
@@ -115,6 +117,8 @@ class RunManager(Daemon):
         ServiceAccount.wait_for_crd()
         Flavor.create_crd()
         Flavor.wait_for_crd()
+        Volume.create_crd()
+        Volume.wait_for_crd()
         Instance.create_crd()
         Instance.wait_for_crd()
         Keypair.create_crd()
@@ -132,6 +136,7 @@ class RunManager(Daemon):
         self.launch_controller(ImageController(1, 30, vmware))
         self.launch_controller(ServiceAccountController(1, 30))
         self.launch_controller(FlavorController(1, 30))
+        self.launch_controller(VolumeController(1, 30, vmware))
         self.launch_controller(InstanceController(1, 30, vmware, args.menu_url))
         self.launch_controller(KeypairController(1, 30))
         return 0

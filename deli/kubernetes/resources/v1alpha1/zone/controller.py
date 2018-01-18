@@ -1,7 +1,10 @@
 from go_defer import with_defer, defer
 
 from deli.kubernetes.controller import ModelController
+from deli.kubernetes.resources.const import ZONE_LABEL
 from deli.kubernetes.resources.model import ResourceState
+from deli.kubernetes.resources.v1alpha1.instance.model import Instance
+from deli.kubernetes.resources.v1alpha1.volume.model import Volume
 from deli.kubernetes.resources.v1alpha1.zone.model import Zone
 
 
@@ -32,13 +35,8 @@ class ZoneController(ModelController):
     def creating(self, model: Zone):
         defer(model.save)
 
-        region = model.region
-        if region is None:
-            model.state = ResourceState.ToDelete
-            return
-
         with self.vmware.client_session() as vmware_client:
-            datacenter = self.vmware.get_datacenter(vmware_client, region.datacenter)
+            datacenter = self.vmware.get_datacenter(vmware_client, model.region.datacenter)
 
             datastore = self.vmware.get_datastore(vmware_client, model.vm_datastore, datacenter)
             if datastore is None:
@@ -59,9 +57,8 @@ class ZoneController(ModelController):
         model.state = ResourceState.Created
 
     def created(self, model: Zone):
-        # Check our region, if it is gone we should be deleted
         region = model.region
-        if region is None:
+        if region.state == ResourceState.Deleting:
             model.delete()
             return
 
@@ -70,9 +67,21 @@ class ZoneController(ModelController):
         model.save()
 
     def deleting(self, model):
-        # Resources that depend on the zone will be auto deleted during their sync
-        model.state = ResourceState.Deleted
-        model.save()
+        if self.can_delete(model):
+            model.state = ResourceState.Deleted
+            model.save()
 
     def deleted(self, model):
         model.delete(force=True)
+
+    def can_delete(self, model):
+        # These resources need the zone to exist to successfully delete
+        instances = Instance.list_all(label_selector=ZONE_LABEL + "=" + str(model.id))
+        if len(instances) > 0:
+            return False
+
+        volumes = Volume.list_all(label_selector=ZONE_LABEL + "=" + str(model.id))
+        if len(volumes) > 0:
+            return False
+
+        return True

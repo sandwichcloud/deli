@@ -32,9 +32,8 @@ class ImageController(ModelController):
     @with_defer
     def creating(self, model: Image):
         region = model.region
-        if region is None:
-            # The region is gone so lets just delete
-            model.delete(force=True)
+        if region.state == ResourceState.Deleting:
+            model.delete()
             return
 
         if model.file_name is None:
@@ -53,16 +52,7 @@ class ImageController(ModelController):
         model.state = ResourceState.Created
 
     def created(self, model: Image):
-        region = model.region
-
-        # If the region is None we need to error
-        if region is None:
-            model.error_message = "Region disappeared"
-            model.save()
-            return
-
-        # Check our region, if it is not created we should be deleted
-        if region.state != ResourceState.Created:
+        if model.region.state == ResourceState.Deleting:
             model.delete()
             return
 
@@ -86,20 +76,15 @@ class ImageController(ModelController):
 
         if model.file_name is not None:
             # Only try and delete if we have a file
-
             region = model.region
-            if region is not None:
-                with self.vmware.client_session() as vmware_client:
-                    datacenter = self.vmware.get_datacenter(vmware_client, region.datacenter)
-                    vmware_image = self.vmware.get_image(vmware_client, model.file_name, datacenter)
-                    if vmware_image is not None:
-                        self.vmware.delete_image(vmware_client, vmware_image)
-                    else:
-                        self.logger.warning(
-                            "Tried to delete image %s but couldn't find its backing file" % str(model.id))
-            else:
-                # The region has poofed so we can't actually delete anything in vmware
-                pass
+            with self.vmware.client_session() as vmware_client:
+                datacenter = self.vmware.get_datacenter(vmware_client, region.datacenter)
+                vmware_image = self.vmware.get_image(vmware_client, model.file_name, datacenter)
+                if vmware_image is not None:
+                    self.vmware.delete_image(vmware_client, vmware_image)
+                else:
+                    self.logger.warning(
+                        "Tried to delete image %s but couldn't find its backing file" % str(model.id))
 
         model.state = ResourceState.Deleted
 

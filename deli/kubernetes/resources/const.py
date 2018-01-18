@@ -12,3 +12,4 @@ SERVICE_ACCOUNT_LABEL = GROUP + '/service_account'
 TAG_LABEL = 'tag.' + GROUP
 IMAGE_VISIBILITY_LABEL = GROUP + '/visibility'
 IMAGE_MEMBER_LABEL = 'image-member.' + GROUP
+ATTACHED_TO_LABEL = GROUP + '/attached_to'

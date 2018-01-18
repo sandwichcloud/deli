@@ -105,12 +105,12 @@ class ImageRouter(Router):
 
         if image.project_id != cherrypy.request.project.id:
             raise cherrypy.HTTPError(404, "The resource could not be found.")
-
         if image.state == ResourceState.ToDelete or image.state == ResourceState.Deleting:
             raise cherrypy.HTTPError(400, "Image is already being deleting")
-
         if image.state == ResourceState.Deleted:
             raise cherrypy.HTTPError(400, "Image has already been deleted")
+        if image.state not in [ResourceState.Created, ResourceState.Error]:
+            raise cherrypy.HTTPError(400, 'Image cannot be deleted in the current state')
 
         image.delete()
 

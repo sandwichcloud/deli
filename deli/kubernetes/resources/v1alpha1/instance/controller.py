@@ -4,12 +4,13 @@ import arrow
 from go_defer import with_defer, defer
 
 from deli.kubernetes.controller import ModelController
-from deli.kubernetes.resources.const import REGION_LABEL, ZONE_LABEL
+from deli.kubernetes.resources.const import REGION_LABEL, ZONE_LABEL, ATTACHED_TO_LABEL
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.v1alpha1.image.model import Image
 from deli.kubernetes.resources.v1alpha1.instance.model import Instance, VMTask, VMPowerState
-from deli.kubernetes.resources.v1alpha1.network.model import Network, NetworkPort
+from deli.kubernetes.resources.v1alpha1.network.model import NetworkPort
 from deli.kubernetes.resources.v1alpha1.region.model import Region
+from deli.kubernetes.resources.v1alpha1.volume.model import Volume, VolumeTask
 from deli.kubernetes.resources.v1alpha1.zone.model import Zone
 
 
@@ -43,10 +44,6 @@ class InstanceController(ModelController):
 
         if model.task is None:
             region: Region = model.region
-            if region is None:
-                # The region is gone so lets just delete
-                model.delete(force=True)
-                return
             if region.schedulable is False:
                 model.error_message = "Region is not currently schedulable"
                 return
@@ -57,21 +54,12 @@ class InstanceController(ModelController):
                 return
 
             network_port: NetworkPort = model.network_port
-            if network_port is None:
-                model.error_message = "Network port does not exist"
-                return
-
             if network_port.state == ResourceState.Error:
                 model.error_message = "Network Port has returned an error"
                 return
 
             if network_port.state != ResourceState.Created:
                 # Wait for network port to be ready
-                return
-
-            network: Network = network_port.network
-            if network is None:
-                model.error_message = "Network does not exist."
                 return
 
             with self.vmware.client_session() as vmware_client:
@@ -111,21 +99,21 @@ class InstanceController(ModelController):
                     self.vmware.power_off_vm(vmware_client, old_vm, hard=True)
                     self.vmware.delete_vm(vmware_client, old_vm)
 
-                port_group = self.vmware.get_port_group(vmware_client, network.port_group, datacenter)
+                port_group = self.vmware.get_port_group(vmware_client, network_port.network.port_group, datacenter)
                 cluster = self.vmware.get_cluster(vmware_client, zone.vm_cluster, datacenter)
                 datastore = self.vmware.get_datastore(vmware_client, zone.vm_datastore, datacenter)
                 folder = None
                 if zone.vm_folder is not None:
                     folder = self.vmware.get_folder(vmware_client, zone.vm_folder, datacenter)
 
-                create_vm_task = self.vmware.create_vm(vm_name=str(model.id),
-                                                       image=vmware_image,
-                                                       cluster=cluster,
-                                                       datastore=datastore,
-                                                       folder=folder,
-                                                       port_group=port_group,
-                                                       vcpus=model.vcpus,
-                                                       ram=model.ram)
+                create_vm_task = self.vmware.create_vm_from_image(vm_name=str(model.id),
+                                                                  image=vmware_image,
+                                                                  cluster=cluster,
+                                                                  datastore=datastore,
+                                                                  folder=folder,
+                                                                  port_group=port_group,
+                                                                  vcpus=model.vcpus,
+                                                                  ram=model.ram)
                 model.task = VMTask.BUILDING
                 model.task_kwargs = {"task_key": create_vm_task.info.key}
         elif model.task == VMTask.BUILDING:
@@ -147,33 +135,20 @@ class InstanceController(ModelController):
     @with_defer
     def created(self, model: Instance):
         region = model.region
-
-        # If the region is None we need to error
-        if region is None:
-            model.error_message = "Region disappeared"
-            model.save()
-            return
-
         # Check our region, if it is not created we should be deleted
-        if region.state != ResourceState.Created:
+        if region.state == ResourceState.Deleting:
             model.delete()
             return
 
-        # If the zone is gone we should delete
-        if model.zone is None:
-            model.delete()
-            return
-
-        # If the network port is gone we need to delete because bad network things may happen
-        if model.network_port is None:
+        zone = model.zone
+        if zone.state == ResourceState.Deleting:
             model.delete()
             return
 
         # Network port is being deleted so we should delete
-        if model.network_port.state != ResourceState.Created:
+        if model.network_port.state == ResourceState.Deleting:
             model.delete()
             return
-
         # If the service account is gone we need to delete
         if model.service_account is None:
             model.delete()
@@ -182,8 +157,9 @@ class InstanceController(ModelController):
         defer(model.save)
 
         # If the image doesn't exist we should clear it
-        if model.image is None:
-            model.image = None
+        if model.image_id is not None:
+            if model.image is None:
+                model.image = None
 
         with self.vmware.client_session() as vmware_client:
             datacenter = self.vmware.get_datacenter(vmware_client, region.datacenter)
@@ -220,13 +196,8 @@ class InstanceController(ModelController):
                             model.error_message = error
                             return
                         image: Image = Image.get(model.project, model.task_kwargs['image_id'])
-                        if image is None:
-                            # Image is none so we can't update it. Do we go and delete it's backing?
-                            # will this actually ever happen?
-                            pass
-                        else:
-                            image.file_name = model.task_kwargs["image_file_name"]
-                            image.save()
+                        image.file_name = model.task_kwargs["image_file_name"]
+                        image.save()
                         model.task = None
 
             power_state = str(vmware_vm.runtime.powerState)
@@ -281,6 +252,14 @@ class InstanceController(ModelController):
                         is_shutdown = self.shutdown(vmware_client, vmware_vm, model)
                         if is_shutdown is False:
                             return
+
+                    attached_volumes = Volume.list(model.project,
+                                                   label_selector=ATTACHED_TO_LABEL + "=" + str(model.id))
+                    if len(attached_volumes) > 0:
+                        for volume in attached_volumes:
+                            volume.task = VolumeTask.DETACHING
+                            volume.save()
+                        return
 
                     self.vmware.delete_vm(vmware_client, vmware_vm)
         else:
