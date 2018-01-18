@@ -114,7 +114,8 @@ class VolumeRouter(Router):
             raise cherrypy.HTTPError(404, 'Could not find the requested instance.')
         if instance.state != ResourceState.Created:
             raise cherrypy.HTTPError(400,
-                                     'The requested instance is not in the following state: ' + ResourceState.Created.value)
+                                     'The requested instance is not in the following state: ' +
+                                     ResourceState.Created.value)
         if instance.region_id != volume.region_id:
             raise cherrypy.HTTPError(400, 'The requested instance is not in the same region as the volume.')
         if instance.zone_id != volume.zone_id:
@@ -187,8 +188,9 @@ class VolumeRouter(Router):
         new_volume.name = request.name
         new_volume.zone = volume.zone
         new_volume.size = volume.size
+        new_volume.cloned_from = volume
         new_volume.create()
-        
+
         volume.task = VolumeTask.CLONING
         volume.task_kwargs = {'volume_id': str(new_volume.id)}
         volume.save()
