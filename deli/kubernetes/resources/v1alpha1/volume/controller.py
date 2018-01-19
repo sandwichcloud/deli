@@ -57,7 +57,7 @@ class VolumeController(ModelController):
                 model.state = ResourceState.Created
                 return
             else:
-                if 'task_id' not in model.task_kwargs:
+                if 'task_key' not in model.task_kwargs:
                     task = self.vmware.clone_disk(vmware_client, str(model.id), str(cloned_from.backing_id), datastore)
                     model.task_kwargs = {"task_key": task.info.key}
                 else:
@@ -68,7 +68,7 @@ class VolumeController(ModelController):
                             model.error_message = error
                             return
 
-                        model.backing_id = task.info.result.id.id
+                        model.backing_id = task.info.result.config.id.id
                         model.task = None
                         model.state = ResourceState.Created
 
@@ -99,9 +99,9 @@ class VolumeController(ModelController):
                 model.task = None
             elif model.task == VolumeTask.CLONING:
                 # Check new volume
-                # If it's created or errored then we are done cloning
+                # If it's none, created or errored then we are done cloning
                 new_volume = Volume.get(model.project, model.task_kwargs['volume_id'])
-                if new_volume.state in [ResourceState.Created, ResourceState.Error]:
+                if new_volume is None or new_volume.state in [ResourceState.Created, ResourceState.Error]:
                     model.task = None
 
             if model.attached_to_id is not None:
@@ -123,10 +123,11 @@ class VolumeController(ModelController):
     @with_defer
     def deleting(self, model: Volume):
 
-        with self.vmware.client_session() as vmware_client:
-            datacenter = self.vmware.get_datacenter(vmware_client, model.region.datacenter)
-            datastore = self.vmware.get_datastore(vmware_client, model.zone.vm_datastore, datacenter)
-            self.vmware.delete_disk(vmware_client, model.backing_id, datastore)
+        if model.backing_id is not None:
+            with self.vmware.client_session() as vmware_client:
+                datacenter = self.vmware.get_datacenter(vmware_client, model.region.datacenter)
+                datastore = self.vmware.get_datastore(vmware_client, model.zone.vm_datastore, datacenter)
+                self.vmware.delete_disk(vmware_client, model.backing_id, datastore)
         defer(model.save)
 
     def deleted(self, model):

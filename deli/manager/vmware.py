@@ -68,6 +68,9 @@ class VMWare(object):
 
         spec = vim.vslm.CloneSpec()
         spec.name = disk_name
+        spec.backingSpec = vim.vslm.CreateSpec.DiskFileBackingSpec()
+        spec.backingSpec.datastore = datastore
+        spec.backingSpec.provisioningType = "thin"
         task = vStorageManager.CloneVStorageObject_Task(id=vim.vslm.ID(id=disk_id), datastore=datastore, spec=spec)
         return task
 

@@ -67,6 +67,10 @@ class VolumeRouter(Router):
             'project': cherrypy.request.project,
             'label_selector': [],
         }
+        if len(kwargs['label_selector']) > 0:
+            kwargs['label_selector'] = ",".join(kwargs['label_selector'])
+        else:
+            del kwargs['label_selector']
         return self.paginate(Volume, ResponseVolume, limit, marker, **kwargs)
 
     @Route(route='{volume_id}', methods=[RequestMethods.DELETE])
@@ -145,7 +149,7 @@ class VolumeRouter(Router):
         volume.task = VolumeTask.DETACHING
         volume.save()
 
-    @Route(route='{volume_id}/action/grow', methods=[RequestMethods.PUT])
+    @Route(route='{volume_id}/action/grow', methods=[RequestMethods.POST])
     @cherrypy.tools.project_scope()
     @cherrypy.tools.model_params(cls=ParamsVolume)
     @cherrypy.tools.model_in(cls=RequestGrowVolume)
@@ -160,6 +164,9 @@ class VolumeRouter(Router):
             raise cherrypy.HTTPError(400, 'Volume is not in the following state: ' + ResourceState.Created.value)
         if volume.task is not None:
             raise cherrypy.HTTPError(400, "Please wait for the current task to finish.")
+
+        if volume.attached_to_id is not None:
+            raise cherrypy.HTTPError(409, 'Cannot grow while attached to an instance')
 
         if request.size <= volume.size:
             raise cherrypy.HTTPError(400, 'Size must be bigger than the current volume size.')
@@ -182,6 +189,10 @@ class VolumeRouter(Router):
             raise cherrypy.HTTPError(400, 'Volume is not in the following state: ' + ResourceState.Created.value)
         if volume.task is not None:
             raise cherrypy.HTTPError(400, "Please wait for the current task to finish.")
+        if volume.attached_to_id is not None:
+            raise cherrypy.HTTPError(409, 'Cannot clone while attached to an instance')
+        if Volume.get_by_name(cherrypy.request.project, request.name) is not None:
+            raise cherrypy.HTTPError(409, 'A volume with the requested name already exists.')
 
         new_volume = Volume()
         new_volume.project = volume.project
@@ -194,3 +205,5 @@ class VolumeRouter(Router):
         volume.task = VolumeTask.CLONING
         volume.task_kwargs = {'volume_id': str(new_volume.id)}
         volume.save()
+
+        return ResponseVolume.from_database(new_volume)
