@@ -26,8 +26,9 @@ class KubeString(StringType):
         self.k8s_reg = re.compile('[a-z0-9A-Z.\-_]')
 
     def validate_kube(self, value, context=None):
-        raise ValidationError(
-            "must consist of alphanumeric characters, '_', '-' or '.' (regex used for validation is '[a-z0-9A-Z.\-_]')")
+        if self.k8s_reg.match(value) is None:
+            raise ValidationError("must consist of alphanumeric characters, '_', '-' or '.' "
+                                  "(regex used for validation is '[a-z0-9A-Z.\-_]')")
 
 
 class ArrowType(BaseType):

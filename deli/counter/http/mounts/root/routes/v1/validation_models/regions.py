@@ -18,6 +18,7 @@ class ParamsRegion(Model):
 
 
 class ParamsListRegion(Model):
+    name = KubeName()
     limit = IntType(default=100, max_value=100, min_value=1)
     marker = UUIDType()
 

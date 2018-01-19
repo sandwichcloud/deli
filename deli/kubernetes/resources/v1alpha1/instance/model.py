@@ -158,7 +158,7 @@ class Instance(ProjectResourceModel):
         tags = {}
         for label, v in self._raw['metadata']['labels'].items():
             if label.startswith(TAG_LABEL):
-                tags[label.replace(TAG_LABEL, '')] = v
+                tags[label.split("/")[1]] = v
 
         return tags
 

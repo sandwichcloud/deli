@@ -7,7 +7,7 @@ from deli.counter.http.mounts.root.routes.v1.validation_models.networks import R
 from deli.http.request_methods import RequestMethods
 from deli.http.route import Route
 from deli.http.router import Router
-from deli.kubernetes.resources.const import REGION_LABEL
+from deli.kubernetes.resources.const import REGION_LABEL, NAME_LABEL
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.v1alpha1.network.model import Network
 from deli.kubernetes.resources.v1alpha1.region.model import Region
@@ -63,14 +63,24 @@ class NetworkRouter(Router):
     @cherrypy.tools.model_params(cls=ParamsListNetwork)
     @cherrypy.tools.model_out_pagination(cls=ResponseNetwork)
     @cherrypy.tools.enforce_policy(policy_name="networks:list")
-    def list(self, region_name, limit: int, marker: uuid.UUID):
-        kwargs = {}
-        if region_name is not None:
-            region: Region = Region.get(region_name)
+    def list(self, name, region_id, limit: int, marker: uuid.UUID):
+        kwargs = {
+            'label_selector': []
+        }
+        if region_id is not None:
+            region: Region = Region.get(region_id)
             if region is None:
                 raise cherrypy.HTTPError(404, "A region with the requested name does not exist.")
 
-            kwargs['label_selector'] = REGION_LABEL + '=' + region.name
+            kwargs['label_selector'].append(REGION_LABEL + '=' + str(region.id))
+
+        if name is not None:
+            kwargs['label_selector'].append(NAME_LABEL + '=' + name)
+
+        if len(kwargs['label_selector']) > 0:
+            kwargs['label_selector'] = ",".join(kwargs['label_selector'])
+        else:
+            del kwargs['label_selector']
 
         return self.paginate(Network, ResponseNetwork, limit, marker, **kwargs)
 

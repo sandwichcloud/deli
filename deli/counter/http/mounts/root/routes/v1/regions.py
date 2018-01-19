@@ -5,6 +5,7 @@ from deli.counter.http.mounts.root.routes.v1.validation_models.regions import Re
 from deli.http.request_methods import RequestMethods
 from deli.http.route import Route
 from deli.http.router import Router
+from deli.kubernetes.resources.const import NAME_LABEL
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.v1alpha1.region.model import Region
 
@@ -49,8 +50,19 @@ class RegionsRouter(Router):
     @cherrypy.tools.model_params(cls=ParamsListRegion)
     @cherrypy.tools.model_out_pagination(cls=ResponseRegion)
     @cherrypy.tools.enforce_policy(policy_name="regions:list")
-    def list(self, limit, marker):
-        return self.paginate(Region, ResponseRegion, limit, marker)
+    def list(self, name, limit, marker):
+        kwargs = {
+            'label_selector': []
+        }
+
+        if name is not None:
+            kwargs['label_selector'].append(NAME_LABEL + '=' + name)
+
+        if len(kwargs['label_selector']) > 0:
+            kwargs['label_selector'] = ",".join(kwargs['label_selector'])
+        else:
+            del kwargs['label_selector']
+        return self.paginate(Region, ResponseRegion, limit, marker, **kwargs)
 
     @Route(route='{region_id}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsRegion)

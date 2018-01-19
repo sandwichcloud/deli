@@ -122,13 +122,13 @@ class VolumeController(ModelController):
 
     @with_defer
     def deleting(self, model: Volume):
-
+        defer(model.save)
         if model.backing_id is not None:
             with self.vmware.client_session() as vmware_client:
                 datacenter = self.vmware.get_datacenter(vmware_client, model.region.datacenter)
                 datastore = self.vmware.get_datastore(vmware_client, model.zone.vm_datastore, datacenter)
                 self.vmware.delete_disk(vmware_client, model.backing_id, datastore)
-        defer(model.save)
+        model.state = ResourceState.Deleted
 
     def deleted(self, model):
         model.delete(force=True)

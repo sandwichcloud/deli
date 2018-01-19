@@ -88,6 +88,7 @@ class ParamsNetwork(Model):
 
 
 class ParamsListNetwork(Model):
-    region_name = KubeName()
+    name = KubeName()
+    region_id = UUIDType()
     limit = IntType(default=100, max_value=100, min_value=1)
     marker = UUIDType()
