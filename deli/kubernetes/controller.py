@@ -22,6 +22,7 @@ class Controller(ABC):
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=self.worker_count)
 
         self.workqueue = WorkQueue()
+        self.shutdown = False
 
     def __add_func(self, obj):
         metadata = obj.get("metadata")
@@ -44,7 +45,7 @@ class Controller(ABC):
                 self.executor.submit(self.run_worker)
 
     def run_worker(self):
-        while self.process_next_item():
+        while self.shutdown is False and self.process_next_item():
             pass
 
     def process_next_item(self):
@@ -75,6 +76,7 @@ class Controller(ABC):
         self.informer.stop()
         self.workqueue.shutdown()
         self.executor.shutdown()
+        self.shutdown = True
 
     @abstractmethod
     def sync_handler(self, key):
