@@ -1,13 +1,19 @@
 import argparse
+import enum
+import ipaddress
+import json
 import os
 import time
+import uuid
 
+import arrow
 import urllib3
 from clify.daemon import Daemon
 from dotenv import load_dotenv
 from kubernetes import config, client
 from kubernetes.client import Configuration
 
+from deli.kubernetes.election.elector import LeaderElector
 from deli.kubernetes.resources.v1alpha1.flavor.controller import FlavorController
 from deli.kubernetes.resources.v1alpha1.flavor.model import Flavor
 from deli.kubernetes.resources.v1alpha1.image.controller import ImageController
@@ -52,6 +58,9 @@ class EnvDefault(argparse.Action):
 class RunManager(Daemon):
     def __init__(self):
         super().__init__('run', 'Run the Sandwich Cloud Manager')
+        self.menu_url = None
+        self.vmware = None
+        self.leader_elector = None
         self.controllers = []
 
     def setup_arguments(self, parser):
@@ -96,6 +105,24 @@ class RunManager(Daemon):
                 self.logger.error("Error connecting to the Kubernetes API. Trying again in 5 seconds. Error: " + str(e))
                 time.sleep(5)
 
+        old_json_encoder = json.JSONEncoder.default
+
+        def json_encoder(self, o):  # pragma: no cover
+            if isinstance(o, uuid.UUID):
+                return str(o)
+            if isinstance(o, arrow.Arrow):
+                return o.isoformat()
+            if isinstance(o, ipaddress.IPv4Network):
+                return str(o)
+            if isinstance(o, ipaddress.IPv4Address):
+                return str(o)
+            if isinstance(o, enum.Enum):
+                return o.value
+
+            return old_json_encoder(self, o)
+
+        json.JSONEncoder.default = json_encoder
+
         self.logger.info("Creating CRDs")
         GlobalRole.create_crd()
         GlobalRole.wait_for_crd()
@@ -125,27 +152,41 @@ class RunManager(Daemon):
         Keypair.wait_for_crd()
         self.logger.info("CRDs have been created")
 
-        vmware = VMWare(args.vcenter_host, args.vcenter_port, args.vcenter_username, args.vcenter_password)
+        self.menu_url = args.menu_url
+        self.vmware = VMWare(args.vcenter_host, args.vcenter_port, args.vcenter_username, args.vcenter_password)
 
-        self.launch_controller(RegionController(1, 30, vmware))
-        self.launch_controller(ZoneController(1, 30, vmware))
-        self.launch_controller(GlobalRoleController(1, 30))
-        self.launch_controller(ProjectRoleController(1, 30))
-        self.launch_controller(NetworkController(1, 30, vmware))
-        self.launch_controller(NetworkPortController(1, 30))
-        self.launch_controller(ImageController(1, 30, vmware))
-        self.launch_controller(ServiceAccountController(1, 30))
-        self.launch_controller(FlavorController(1, 30))
-        self.launch_controller(VolumeController(1, 30, vmware))
-        self.launch_controller(InstanceController(1, 30, vmware, args.menu_url))
-        self.launch_controller(KeypairController(1, 30))
+        self.leader_elector = LeaderElector(self.on_started_leading, self.on_stopped_leading)
+        self.leader_elector.start()
+
         return 0
 
     def launch_controller(self, controller):
         self.controllers.append(controller)
         controller.start()
 
-    def on_shutdown(self, signum=None, frame=None):
-        self.logger.info("Shutting down the Manager")
+    def on_started_leading(self):
+        if self.leader_elector.shutting_down:
+            return
+        self.logger.info("Started leading... starting controllers")
+        self.launch_controller(RegionController(1, 30, self.vmware))
+        self.launch_controller(ZoneController(1, 30, self.vmware))
+        self.launch_controller(GlobalRoleController(1, 30))
+        self.launch_controller(ProjectRoleController(1, 30))
+        self.launch_controller(NetworkController(1, 30, self.vmware))
+        self.launch_controller(NetworkPortController(1, 30))
+        self.launch_controller(ImageController(1, 30, self.vmware))
+        self.launch_controller(ServiceAccountController(1, 30))
+        self.launch_controller(FlavorController(1, 30))
+        self.launch_controller(VolumeController(1, 30, self.vmware))
+        self.launch_controller(InstanceController(1, 30, self.vmware, self.menu_url))
+        self.launch_controller(KeypairController(1, 30))
+
+    def on_stopped_leading(self):
+        self.logger.info("Stopped leading... stopping controllers")
         for controller in self.controllers:
             controller.stop()
+        self.controllers = []
+
+    def on_shutdown(self, signum=None, frame=None):
+        self.logger.info("Shutting down the Manager")
+        self.leader_elector.shutdown()

@@ -48,7 +48,7 @@ class Controller(ABC):
             pass
 
     def process_next_item(self):
-        obj, shutdown = self.workqueue.get()
+        key, shutdown = self.workqueue.get()
         if shutdown:
             # If the queue is shutdown we should stop working
             return False
@@ -61,13 +61,13 @@ class Controller(ABC):
 
         # noinspection PyBroadException
         try:
-            _process_item(obj)
+            _process_item(key)
         except (SystemExit, KeyboardInterrupt, GeneratorExit):
             # Ignore these exceptions, exiting will be handled via signals
             pass
         except Exception:
             # Catch all errors and just log them so the loop doesn't break
-            self.logger.exception("Error processing item: " + obj)
+            self.logger.exception("Error processing item: " + key)
 
         return True
 
