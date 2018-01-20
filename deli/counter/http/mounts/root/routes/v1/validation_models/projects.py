@@ -1,5 +1,5 @@
 from schematics import Model
-from schematics.types import UUIDType, IntType
+from schematics.types import UUIDType, IntType, BooleanType
 
 from deli.http.schematics.types import ArrowType, KubeName
 from deli.kubernetes.resources.project import Project
@@ -14,6 +14,7 @@ class ParamsProject(Model):
 
 
 class ParamsListProject(Model):
+    all = BooleanType(default=False)
     limit = IntType(default=100, max_value=100, min_value=1)
     marker = UUIDType()
 

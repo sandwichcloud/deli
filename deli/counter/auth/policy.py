@@ -149,6 +149,10 @@ POLICIES = [
         ]
     },
     {
+        "name": "projects:get:all",
+        "description": "Ability to get all projects"
+    },
+    {
         "name": "projects:list",
         "description": "Ability to list projects",
         "tags": [
@@ -156,11 +160,19 @@ POLICIES = [
         ]
     },
     {
+        "name": "projects:list:all",
+        "description": "Ability to list all projects"
+    },
+    {
         "name": "projects:delete",
         "description": "Ability to delete a project"
     },
     {
         "name": "projects:scope",
+        "description": "Ability to scope to projects"
+    },
+    {
+        "name": "projects:scope:all",
         "description": "Ability to scope to all projects"
     },
     {
@@ -454,17 +466,11 @@ POLICIES = [
     },
     {
         "name": "database:users:get",
-        "description": "Ability to get a user",
-        "tags": [
-            "viewer"
-        ]
+        "description": "Ability to get a user"
     },
     {
         "name": "database:users:list",
-        "description": "Ability to list users",
-        "tags": [
-            "viewer"
-        ]
+        "description": "Ability to list users"
     },
     {
         "name": "database:users:delete",

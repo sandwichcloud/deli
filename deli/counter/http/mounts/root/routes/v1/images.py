@@ -8,7 +8,7 @@ from deli.http.request_methods import RequestMethods
 from deli.http.route import Route
 from deli.http.router import Router
 from deli.kubernetes.resources.const import REGION_LABEL, IMAGE_VISIBILITY_LABEL, \
-    IMAGE_MEMBER_LABEL
+    MEMBER_LABEL
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.image.model import Image, ImageVisibility
@@ -79,7 +79,7 @@ class ImageRouter(Router):
 
         if visibility == ImageVisibility.PRIVATE:
             kwargs['label_selector'].append(IMAGE_VISIBILITY_LABEL + '=' + ImageVisibility.PRIVATE.value)
-            kwargs['label_selector'].append(IMAGE_MEMBER_LABEL + "/" + str(cherrypy.request.project.id) + "=1")
+            kwargs['label_selector'].append(MEMBER_LABEL + "/" + str(cherrypy.request.project.id) + "=1")
         else:
             kwargs['label_selector'].append(IMAGE_VISIBILITY_LABEL + '=' + ImageVisibility.PUBLIC.value)
 

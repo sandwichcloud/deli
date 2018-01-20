@@ -8,6 +8,7 @@ from deli.counter.http.mounts.root.routes.v1.validation_models.projects import R
 from deli.http.request_methods import RequestMethods
 from deli.http.route import Route
 from deli.http.router import Router
+from deli.kubernetes.resources.const import MEMBER_LABEL
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.role.model import ProjectRole
 from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
@@ -49,14 +50,31 @@ class ProjectRouter(Router):
     @cherrypy.tools.resource_object(id_param="project_id", cls=Project)
     @cherrypy.tools.enforce_policy(policy_name="projects:get")
     def get(self, **_):
+        project: Project = cherrypy.request.resource_object
+
+        if project.is_member(cherrypy.request.user['name'], cherrypy.request.user['driver']) is False:
+            self.mount.enforce_policy("projects:get:all")
+
         return ResponseProject.from_database(cherrypy.request.resource_object)
 
     @Route()
     @cherrypy.tools.model_params(cls=ParamsListProject)
     @cherrypy.tools.model_out_pagination(cls=ResponseProject)
     @cherrypy.tools.enforce_policy(policy_name="projects:list")
-    def list(self, limit: int, marker: uuid.UUID):
-        return self.paginate(Project, ResponseProject, limit, marker)
+    def list(self, all: bool, limit: int, marker: uuid.UUID):
+        kwargs = {
+            "label_selector": []
+        }
+
+        if all is False:
+            kwargs['label_selector'].append(
+                cherrypy.request.user['driver'] + "." + MEMBER_LABEL + "/" + cherrypy.request.user['name'])
+        else:
+            self.mount.enforce_policy("projects:list:all")
+
+        kwargs['label_selector'] = ",".join(kwargs['label_selector'])
+
+        return self.paginate(Project, ResponseProject, limit, marker, **kwargs)
 
     @Route(route='{project_id}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsProject)

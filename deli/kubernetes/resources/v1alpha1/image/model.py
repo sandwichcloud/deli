@@ -1,7 +1,7 @@
 import enum
 import uuid
 
-from deli.kubernetes.resources.const import REGION_LABEL, IMAGE_VISIBILITY_LABEL, PROJECT_LABEL, IMAGE_MEMBER_LABEL, \
+from deli.kubernetes.resources.const import REGION_LABEL, IMAGE_VISIBILITY_LABEL, PROJECT_LABEL, MEMBER_LABEL, \
     NAME_LABEL
 from deli.kubernetes.resources.model import GlobalResourceModel
 from deli.kubernetes.resources.project import Project
@@ -78,7 +78,7 @@ class Image(GlobalResourceModel):
         if value == ImageVisibility.PUBLIC:
             # We are now public so clear members
             for label in list(self._raw['metadata']['labels']):
-                if label.startswith(IMAGE_MEMBER_LABEL) is False:
+                if label.startswith(MEMBER_LABEL) is False:
                     continue
                 del self._raw['metadata']['labels'][label]
         elif value == ImageVisibility.PRIVATE:
@@ -88,16 +88,16 @@ class Image(GlobalResourceModel):
         self._raw['metadata']['labels'][IMAGE_VISIBILITY_LABEL] = value.value
 
     def add_member(self, project_id):
-        self._raw['metadata']['labels'][IMAGE_MEMBER_LABEL + "/" + str(project_id)] = "1"
+        self._raw['metadata']['labels'][MEMBER_LABEL + "/" + str(project_id)] = "1"
 
     def remove_member(self, project_id):
-        self._raw['metadata']['labels'].pop(IMAGE_MEMBER_LABEL + "/" + str(project_id), None)
+        self._raw['metadata']['labels'].pop(MEMBER_LABEL + "/" + str(project_id), None)
 
     def member_ids(self):
         member_ids = []
 
         for label in self._raw['metadata']['labels']:
-            if label.startswith(IMAGE_MEMBER_LABEL) is False:
+            if label.startswith(MEMBER_LABEL) is False:
                 continue
             member_id = label.split("/")[1]
             if member_id == self.project_id:
@@ -107,4 +107,4 @@ class Image(GlobalResourceModel):
         return member_ids
 
     def is_member(self, project_id):
-        return IMAGE_MEMBER_LABEL + "/" + str(project_id) in self._raw['metadata']['labels']
+        return MEMBER_LABEL + "/" + str(project_id) in self._raw['metadata']['labels']

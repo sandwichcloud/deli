@@ -62,6 +62,7 @@ class AuthNTokenRouter(Router):
     @Route(route='scope', methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestScopeToken)
     @cherrypy.tools.model_out(cls=ResponseOAuthToken)
+    @cherrypy.tools.enforce_policy(policy_name="projects:scope")
     def scope_token(self):
 
         if cherrypy.request.service_account is not None:
@@ -95,7 +96,7 @@ class AuthNTokenRouter(Router):
             project_role_ids.extend(project.get_member(user['name'], user['driver']))
         else:
             try:
-                self.mount.enforce_policy("projects:scope")
+                self.mount.enforce_policy("projects:scope:all")
             except cherrypy.HTTPError:
                 raise cherrypy.HTTPError(400, "Only project members can scope to this project")
 

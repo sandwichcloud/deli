@@ -6,7 +6,7 @@ from kubernetes import client
 from kubernetes.client import V1DeleteOptions, V1Namespace
 from kubernetes.client.rest import ApiException
 
-from deli.kubernetes.resources.const import NAME_LABEL
+from deli.kubernetes.resources.const import NAME_LABEL, MEMBER_LABEL
 
 
 class Project(object):
@@ -78,14 +78,17 @@ class Project(object):
         return objs[0]
 
     @classmethod
-    def list_sig(cls):
-        return [], {"label_selector": "sandwichcloud.com/project"}
-
-    @classmethod
     def list(cls, **kwargs):
+        if 'label_selector' in kwargs:
+            label_selector = kwargs['label_selector']
+            if len(label_selector) > 0:
+                kwargs['label_selector'] += ",sandwichcloud.com/project"
+            else:
+                kwargs['label_selector'] += "sandwichcloud.com/project"
+        else:
+            kwargs['label_selector'] = "sandwichcloud.com/project"
         core_api = client.CoreV1Api()
-        _, sig_kwargs = cls.list_sig()
-        raw_list = core_api.list_namespace(**{**sig_kwargs, **kwargs})
+        raw_list = core_api.list_namespace(**kwargs)
         items = []
         for item in raw_list.items:
             items.append(cls(item))
@@ -113,11 +116,8 @@ class Project(object):
         return member_data
 
     def is_member(self, username, driver):
-        core_api = client.CoreV1Api()
-        configmap = core_api.read_namespaced_config_map("project-members", str(self.id)).to_dict()
-        if configmap['data'] is None:
-            return False
-        return username + '__' + driver in configmap['data']
+        label = driver + "." + MEMBER_LABEL + "/" + username
+        return label in self._raw['metadata']['labels']
 
     def get_member(self, username, driver):
         core_api = client.CoreV1Api()
@@ -125,12 +125,14 @@ class Project(object):
         return json.loads(configmap['data'][username + '__' + driver])
 
     def add_member(self, username, driver, role_ids):
+        self._raw['metadata']['labels'][driver + "." + MEMBER_LABEL + "/" + username] = "1"
         core_api = client.CoreV1Api()
         configmap = core_api.read_namespaced_config_map("project-members", str(self.id)).to_dict()
         configmap['data'][username + '__' + driver] = json.dumps(role_ids)
         core_api.replace_namespaced_config_map("project-members", str(self.id), configmap)
 
     def remove_member(self, username, driver):
+        del self._raw['metadata']['labels'][driver + "." + MEMBER_LABEL + "/" + username]
         core_api = client.CoreV1Api()
         configmap = core_api.read_namespaced_config_map("project-members", str(self.id)).to_dict()
         del configmap['data'][username + '__' + driver]
