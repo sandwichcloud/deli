@@ -5,7 +5,9 @@ from deli.counter.http.mounts.root.routes.v1.validation_models.network_ports imp
 from deli.http.request_methods import RequestMethods
 from deli.http.route import Route
 from deli.http.router import Router
+from deli.kubernetes.resources.const import NETWORK_PORT_LABEL
 from deli.kubernetes.resources.model import ResourceState
+from deli.kubernetes.resources.v1alpha1.instance.model import Instance
 from deli.kubernetes.resources.v1alpha1.network.model import NetworkPort
 
 
@@ -47,5 +49,9 @@ class NetworkPortsRouter(Router):
 
         if network_port.state == ResourceState.Deleted:
             raise cherrypy.HTTPError(400, "Network Port has already been deleted")
+
+        instances = Instance.list_all(label_selector=NETWORK_PORT_LABEL + "=" + str(network_port.id))
+        if len(instances) > 0:
+            raise cherrypy.HTTPError(409, 'Cannot delete a network port while it is in use by an instance')
 
         network_port.delete()

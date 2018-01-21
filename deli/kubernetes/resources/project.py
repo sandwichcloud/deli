@@ -1,4 +1,3 @@
-import json
 import uuid
 
 import arrow
@@ -44,14 +43,6 @@ class Project(object):
     def create(self):
         core_api = client.CoreV1Api()
         self._raw = core_api.create_namespace(self._raw).to_dict()
-        core_api.create_namespaced_config_map(str(self.id), {
-            "apiVersion": "v1",
-            "kind": "ConfigMap",
-            "metadata": {
-                "name": "project-members"
-            },
-            "data": {}
-        })
 
     @classmethod
     def get(cls, id, safe=True):
@@ -106,34 +97,21 @@ class Project(object):
         core_api = client.CoreV1Api()
         core_api.delete_namespace(str(self.id), V1DeleteOptions())
 
-    @property
-    def members(self):
+    def save(self):
         core_api = client.CoreV1Api()
-        member_data = core_api.read_namespaced_config_map("project-members", str(self.id)).to_dict()['data']
-        for k, v in member_data:
-            member_data[k] = json.loads(v)
-
-        return member_data
+        self._raw = core_api.replace_namespace(str(self.id), self._raw)
 
     def is_member(self, username, driver):
         label = driver + "." + MEMBER_LABEL + "/" + username
         return label in self._raw['metadata']['labels']
 
-    def get_member(self, username, driver):
-        core_api = client.CoreV1Api()
-        configmap = core_api.read_namespaced_config_map("project-members", str(self.id)).to_dict()
-        return json.loads(configmap['data'][username + '__' + driver])
+    def get_member_id(self, username, driver):
+        return self._raw['metadata']['labels'][driver + "." + MEMBER_LABEL + "/" + username]
 
-    def add_member(self, username, driver, role_ids):
-        self._raw['metadata']['labels'][driver + "." + MEMBER_LABEL + "/" + username] = "1"
-        core_api = client.CoreV1Api()
-        configmap = core_api.read_namespaced_config_map("project-members", str(self.id)).to_dict()
-        configmap['data'][username + '__' + driver] = json.dumps(role_ids)
-        core_api.replace_namespaced_config_map("project-members", str(self.id), configmap)
+    def add_member(self, project_member):
+        label = project_member.driver + "." + MEMBER_LABEL + "/" + project_member.username
+        self._raw['metadata']['labels'][label] = str(project_member.id)
 
-    def remove_member(self, username, driver):
-        del self._raw['metadata']['labels'][driver + "." + MEMBER_LABEL + "/" + username]
-        core_api = client.CoreV1Api()
-        configmap = core_api.read_namespaced_config_map("project-members", str(self.id)).to_dict()
-        del configmap['data'][username + '__' + driver]
-        core_api.replace_namespaced_config_map("project-members", str(self.id), configmap)
+    def remove_member(self, project_member):
+        label = project_member.driver + "." + MEMBER_LABEL + "/" + project_member.username
+        del self._raw['metadata']['labels'][label]

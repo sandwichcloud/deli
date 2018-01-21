@@ -96,4 +96,5 @@ class RunMetadata(Daemon):
 
     def on_shutdown(self, signum=None, frame=None):
         self.logger.info("Shutting down the Metadata Server")
-        self.vspc_server.stop()
+        if self.vspc_server is not None:
+            self.vspc_server.stop()

@@ -24,6 +24,10 @@ from deli.kubernetes.resources.v1alpha1.keypair.controller import KeypairControl
 from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
 from deli.kubernetes.resources.v1alpha1.network.controller import NetworkController, NetworkPortController
 from deli.kubernetes.resources.v1alpha1.network.model import Network, NetworkPort
+from deli.kubernetes.resources.v1alpha1.project_member.controller import ProjectMemberController
+from deli.kubernetes.resources.v1alpha1.project_member.model import ProjectMember
+from deli.kubernetes.resources.v1alpha1.project_quota.controller import ProjectQuotaController
+from deli.kubernetes.resources.v1alpha1.project_quota.model import ProjectQuota
 from deli.kubernetes.resources.v1alpha1.region.controller import RegionController
 from deli.kubernetes.resources.v1alpha1.region.model import Region
 from deli.kubernetes.resources.v1alpha1.role.controller import GlobalRoleController, ProjectRoleController
@@ -129,6 +133,10 @@ class RunManager(Daemon):
         GlobalRole.create_default_roles()
         ProjectRole.create_crd()
         ProjectRole.wait_for_crd()
+        ProjectMember.create_crd()
+        ProjectMember.wait_for_crd()
+        ProjectQuota.create_crd()
+        ProjectQuota.wait_for_crd()
 
         Region.create_crd()
         Region.wait_for_crd()
@@ -172,6 +180,8 @@ class RunManager(Daemon):
         self.launch_controller(ZoneController(1, 30, self.vmware))
         self.launch_controller(GlobalRoleController(1, 30))
         self.launch_controller(ProjectRoleController(1, 30))
+        self.launch_controller(ProjectMemberController(1, 30))
+        self.launch_controller(ProjectQuotaController(1, 30))
         self.launch_controller(NetworkController(1, 30, self.vmware))
         self.launch_controller(NetworkPortController(1, 30))
         self.launch_controller(ImageController(1, 30, self.vmware))
@@ -189,4 +199,5 @@ class RunManager(Daemon):
 
     def on_shutdown(self, signum=None, frame=None):
         self.logger.info("Shutting down the Manager")
-        self.leader_elector.shutdown()
+        if self.leader_elector is not None:
+            self.leader_elector.shutdown()

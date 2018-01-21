@@ -183,6 +183,13 @@ POLICIES = [
         ]
     },
     {
+        "name": "projects:members:get",
+        "description": "Ability to get a member in a project",
+        "tags": [
+            "project_member"
+        ]
+    },
+    {
         "name": "projects:members:list",
         "description": "Ability to list members in a project",
         "tags": [
@@ -191,11 +198,30 @@ POLICIES = [
         ]
     },
     {
+        "name": "projects:members:modify",
+        "description": "Ability to modify a project member's roles",
+        "tags": [
+            "project_member"
+        ]
+    },
+    {
         "name": "projects:members:remove",
         "description": "Ability to remove a member from a project",
         "tags": [
             "project_member"
         ]
+    },
+    {
+        "name": "projects:quota:get",
+        "description": "Ability to get a project's quota",
+        "tags": [
+            "project_member",
+            "service_account"
+        ]
+    },
+    {
+        "name": "projects:quota:modify",
+        "description": "Ability to modify a project's quota",
     },
     # Volumes
     {

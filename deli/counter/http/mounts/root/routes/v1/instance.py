@@ -2,6 +2,7 @@ import uuid
 
 import cherrypy
 
+from deli.counter.http.mounts.root.routes.v1.errors.quota import QuotaError
 from deli.counter.http.mounts.root.routes.v1.validation_models.images import ResponseImage
 from deli.counter.http.mounts.root.routes.v1.validation_models.instances import RequestCreateInstance, \
     ResponseInstance, ParamsInstance, ParamsListInstance, RequestInstancePowerOffRestart, RequestInstanceImage
@@ -16,6 +17,7 @@ from deli.kubernetes.resources.v1alpha1.image.model import Image, ImageVisibilit
 from deli.kubernetes.resources.v1alpha1.instance.model import Instance, VMPowerState
 from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
 from deli.kubernetes.resources.v1alpha1.network.model import NetworkPort, Network
+from deli.kubernetes.resources.v1alpha1.project_quota.model import ProjectQuota
 from deli.kubernetes.resources.v1alpha1.region.model import Region
 from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
 from deli.kubernetes.resources.v1alpha1.volume.model import Volume
@@ -81,7 +83,7 @@ class InstanceRouter(Router):
             raise cherrypy.HTTPError(400, 'Can only create a instance with a image in the following state: %s'.format(
                 ResourceState.Created))
 
-        flavor = Flavor.get(request.flavor_id)
+        flavor: Flavor = Flavor.get(request.flavor_id)
         if flavor is None:
             raise cherrypy.HTTPError(404, 'A flavor with the requested id does not exist.')
 
@@ -102,6 +104,31 @@ class InstanceRouter(Router):
             service_account = ServiceAccount.get_by_name(project, 'default')
             if service_account is None:
                 raise cherrypy.HTTPError(404, 'Could not find a default service account to attach to the instance.')
+
+        quota: ProjectQuota = ProjectQuota.list(project)[0]
+        used_vcpu = quota.used_vcpu + flavor.vcpus
+        used_ram = quota.used_ram + flavor.ram
+        requested_disk = flavor.disk
+        if request.disk is not None:
+            requested_disk = request.disk
+        used_disk = quota.used_disk + requested_disk
+
+        if quota.vcpu != -1:
+            if used_vcpu > quota.vcpu:
+                raise QuotaError("VCPU", flavor.vcpus, quota.used_vcpu, quota.vcpu)
+
+        if quota.ram != -1:
+            if used_ram > quota.ram:
+                raise QuotaError("Ram", flavor.ram, quota.used_ram, quota.ram)
+
+        if quota.disk != -1:
+            if used_disk > quota.disk:
+                raise QuotaError("Disk", requested_disk, quota.used_disk, quota.disk)
+
+        quota.used_vcpu = used_vcpu
+        quota.used_ram = used_ram
+        quota.used_disk = used_disk
+        quota.save()
 
         network_port = NetworkPort()
         network_port.project = project

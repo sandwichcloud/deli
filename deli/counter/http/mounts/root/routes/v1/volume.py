@@ -2,6 +2,7 @@ import uuid
 
 import cherrypy
 
+from deli.counter.http.mounts.root.routes.v1.errors.quota import QuotaError
 from deli.counter.http.mounts.root.routes.v1.validation_models.volume import RequestCreateVolume, ResponseVolume, \
     ParamsVolume, ParamsListVolume, RequestCloneVolume, RequestAttachVolume, RequestGrowVolume
 from deli.http.request_methods import RequestMethods
@@ -10,6 +11,7 @@ from deli.http.router import Router
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.instance.model import Instance
+from deli.kubernetes.resources.v1alpha1.project_quota.model import ProjectQuota
 from deli.kubernetes.resources.v1alpha1.volume.model import Volume, VolumeTask
 from deli.kubernetes.resources.v1alpha1.zone.model import Zone
 
@@ -38,6 +40,15 @@ class VolumeRouter(Router):
             raise cherrypy.HTTPError(400,
                                      'Can only create a volume with a zone in the following state: %s'.format(
                                          ResourceState.Created))
+
+        quota: ProjectQuota = ProjectQuota.list(project)[0]
+        used_disk = quota.used_disk + request.size
+        if quota.disk != -1:
+            if used_disk > quota.disk:
+                raise QuotaError("Disk", request.size, quota.used_disk, quota.disk)
+
+        quota.used_disk = used_disk
+        quota.save()
 
         volume = Volume()
         volume.project = project
@@ -156,6 +167,7 @@ class VolumeRouter(Router):
     @cherrypy.tools.resource_object(id_param="volume_id", cls=Volume)
     @cherrypy.tools.enforce_policy(policy_name="volumes:action:grow")
     def action_grow(self, **_):
+        project: Project = cherrypy.request.project
         request: RequestGrowVolume = cherrypy.request.model
         cherrypy.response.status = 204
 
@@ -170,6 +182,15 @@ class VolumeRouter(Router):
 
         if request.size <= volume.size:
             raise cherrypy.HTTPError(400, 'Size must be bigger than the current volume size.')
+
+        quota: ProjectQuota = ProjectQuota.list(project)[0]
+        used_disk = quota.used_disk + request.size
+        if quota.disk != -1:
+            if used_disk > quota.disk:
+                raise QuotaError("Disk", request.size, quota.used_disk, quota.disk)
+
+        quota.used_disk = used_disk
+        quota.save()
 
         volume.task = VolumeTask.GROWING
         volume.task_kwargs = {"size": request.size}

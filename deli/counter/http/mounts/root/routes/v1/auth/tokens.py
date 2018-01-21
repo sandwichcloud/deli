@@ -8,6 +8,7 @@ from deli.http.request_methods import RequestMethods
 from deli.http.route import Route
 from deli.http.router import Router
 from deli.kubernetes.resources.project import Project
+from deli.kubernetes.resources.v1alpha1.project_member.model import ProjectMember
 from deli.kubernetes.resources.v1alpha1.role.model import GlobalRole, ProjectRole
 
 
@@ -93,7 +94,9 @@ class AuthNTokenRouter(Router):
 
         user = cherrypy.request.user
         if project.is_member(user['name'], user['driver']):
-            project_role_ids.extend(project.get_member(user['name'], user['driver']))
+            member_id = project.get_member_id(user['name'], user['driver'])
+            project_member: ProjectMember = ProjectMember.get(project, member_id)
+            project_role_ids.extend(project_member.roles)
         else:
             try:
                 self.mount.enforce_policy("projects:scope:all")

@@ -1,8 +1,10 @@
 from schematics import Model
-from schematics.types import UUIDType, IntType, BooleanType
+from schematics.types import UUIDType, IntType, BooleanType, ListType, StringType
 
 from deli.http.schematics.types import ArrowType, KubeName
 from deli.kubernetes.resources.project import Project
+from deli.kubernetes.resources.v1alpha1.project_member.model import ProjectMember
+from deli.kubernetes.resources.v1alpha1.project_quota.model import ProjectQuota
 
 
 class RequestCreateProject(Model):
@@ -32,3 +34,66 @@ class ResponseProject(Model):
         project_model.created_at = project.created_at
 
         return project_model
+
+
+class RequestProjectModifyQuota(Model):
+    vcpu = IntType(required=True, min_value=-1)
+    ram = IntType(required=True, min_value=-1)
+    disk = IntType(required=True, min_value=-1)
+
+
+class ResponseProjectQuota(Model):
+    vcpu = IntType(required=True)
+    ram = IntType(required=True)
+    disk = IntType(required=True)
+    used_vcpu = IntType(required=True)
+    used_ram = IntType(required=True)
+    used_disk = IntType(required=True)
+
+    @classmethod
+    def from_database(cls, project: Project):
+        quota: ProjectQuota = ProjectQuota.list(project)[0]
+        model = cls()
+        model.vcpu = quota.vcpu
+        model.ram = quota.ram
+        model.disk = quota.disk
+        model.used_vcpu = quota.used_vcpu
+        model.used_ram = quota.used_ram
+        model.used_disk = quota.used_disk
+
+        return model
+
+
+class RequestProjectAddMember(Model):
+    username = StringType(required=True)
+    driver = StringType(required=True, choices=['github', 'database'])
+
+
+class ParamsProjectMember(Model):
+    member_id = UUIDType(required=True)
+
+
+class ParamsListProjectMember(Model):
+    limit = IntType(default=100, max_value=100, min_value=1)
+    marker = UUIDType()
+
+
+class RequestProjectUpdateMember(Model):
+    roles = ListType(UUIDType, required=True, min_size=1)
+
+
+class ResponseProjectMember(Model):
+    id = UUIDType(required=True)
+    username = StringType(required=True)
+    driver = StringType(required=True)
+    roles = ListType(UUIDType, default=list)
+
+    @classmethod
+    def from_database(cls, project_member: ProjectMember):
+        model = cls()
+        model.id = project_member.id
+        model.username = project_member.username
+        model.driver = project_member.driver
+        model.roles = project_member.roles
+
+        return model

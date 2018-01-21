@@ -10,6 +10,7 @@ from deli.http.route import Route
 from deli.http.router import Router
 from deli.kubernetes.resources.const import MEMBER_LABEL
 from deli.kubernetes.resources.project import Project
+from deli.kubernetes.resources.v1alpha1.project_quota.model import ProjectQuota
 from deli.kubernetes.resources.v1alpha1.role.model import ProjectRole
 from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
 
@@ -41,6 +42,9 @@ class ProjectRouter(Router):
 
         ProjectRole.create_default_roles(project)
         ServiceAccount.create_default_service_account(project)
+        quota = ProjectQuota()
+        quota.project = project
+        quota.create()
 
         return ResponseProject.from_database(project)
 

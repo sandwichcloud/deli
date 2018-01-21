@@ -7,18 +7,18 @@ class Flavor(GlobalResourceModel):
         super().__init__(raw)
         if raw is None:
             self._raw['spec'] = {
-                'vcpus': 0,
+                'vcpu': 0,
                 'ram': 0,
                 'disk': 0
             }
 
     @property
     def vcpus(self):
-        return self._raw['status']["vcpus"]
+        return self._raw['status']["vcpu"]
 
     @vcpus.setter
     def vcpus(self, value):
-        self._raw['status']["vcpus"] = value
+        self._raw['status']["vcpu"] = value
 
     @property
     def ram(self):
