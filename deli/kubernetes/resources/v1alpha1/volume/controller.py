@@ -88,10 +88,7 @@ class VolumeController(ModelController):
                 self.vmware.attach_disk(vmware_client, model.backing_id, datastore, vm)
                 model.task = None
             elif model.task == VolumeTask.DETACHING:
-                vm = self.vmware.get_vm(vmware_client, str(model.attached_to_id), datacenter)
-                if vm is not None:
-                    self.vmware.detach_disk(vmware_client, model.backing_id, vm)
-                model.attached_to = None
+                self.detach_disk(vmware_client, datacenter, model)
                 model.task = None
             elif model.task == VolumeTask.GROWING:
                 self.vmware.grow_disk(vmware_client, model.backing_id, model.task_kwargs['size'], datastore)
@@ -112,12 +109,19 @@ class VolumeController(ModelController):
                 if model.cloned_from is None:
                     model.cloned_from = None
 
+    def detach_disk(self, vmware_client, datacenter, model):
+        vm = self.vmware.get_vm(vmware_client, str(model.attached_to_id), datacenter)
+        if vm is not None:
+            self.vmware.detach_disk(vmware_client, model.backing_id, vm)
+        model.attached_to = None
+
     def to_delete(self, model):
         if model.attached_to is not None:
-            # If we are still attached we can't delete
-            model.state = ResourceState.Created
-        else:
-            model.state = ResourceState.Deleting
+            # If we are still attached so we need to detach before deleting
+            with self.vmware.client_session() as vmware_client:
+                datacenter = self.vmware.get_datacenter(vmware_client, model.region.datacenter)
+                self.detach_disk(vmware_client, datacenter, model)
+        model.state = ResourceState.Deleting
         model.save()
 
     @with_defer
