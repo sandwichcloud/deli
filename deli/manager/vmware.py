@@ -91,7 +91,11 @@ class VMWare(object):
 
     def detach_disk(self, vmware_client, disk_id, vm):
         task = vm.DetachDisk_Task(diskId=vim.vslm.ID(id=disk_id))
-        self.wait_for_tasks(vmware_client, [task])
+        try:
+            self.wait_for_tasks(vmware_client, [task])
+        except vim.fault.NotFound:
+            # Ignore error if the disk is already detached
+            pass
 
     def create_vm_from_image(self, vm_name, image, cluster, datastore, folder, port_group, vcpus, ram):
 
