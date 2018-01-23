@@ -3,54 +3,72 @@ POLICIES = [
     {
         "name": "policies:get",
         "description": "Ability to get a policy",
-        "tags": [
-            "viewer"
-        ]
 
     },
     {
         "name": "policies:list",
         "description": "Ability to list policies",
-        "tags": [
-            "viewer"
-        ]
     },
 
     # Roles
     {
-        "name": "roles:create:global",
+        "name": "roles:global:create",
         "description": "Ability to create a global role"
     },
     {
-        "name": "roles:delete:global",
+        "name": "roles:project:create",
+        "description": "Ability to create a project role",
+        "tags": [
+            "project",
+            "default_project_member"
+        ]
+    },
+    {
+        "name": "roles:global:get",
+        "description": "Ability to get a global role",
+    },
+    {
+        "name": "roles:project:get",
+        "description": "Ability to get a project role",
+        "tags": [
+            "project",
+            "default_project_member"
+        ]
+    },
+    {
+        "name": "roles:global:list",
+        "description": "Ability to list global roles",
+    },
+    {
+        "name": "roles:project:list",
+        "description": "Ability to list project roles",
+        "tags": [
+            "project",
+            "default_project_member"
+        ]
+    },
+    {
+        "name": "roles:global:update",
+        "description": "Ability to update a global role",
+    },
+    {
+        "name": "roles:project:update",
+        "description": "Ability to update a project role",
+        "tags": [
+            "project",
+            "default_project_member"
+        ]
+    },
+    {
+        "name": "roles:global:delete",
         "description": "Ability to delete a global role"
     },
     {
-        "name": "roles:create:project",
-        "description": "Ability to create a project role",
-        "tags": [
-            "project_member"
-        ]
-    },
-    {
-        "name": "roles:delete:project",
+        "name": "roles:project:delete",
         "description": "Ability to delete a project role",
         "tags": [
-            "project_member"
-        ]
-    },
-    {
-        "name": "roles:get",
-        "description": "Ability to get a role",
-        "tags": [
-            "viewer"
-        ]
-    },
-    {
-        "name": "roles:list",
-        "description": "Ability to list roles",
-        "tags": [
-            "viewer"
+            "project",
+            "default_project_member"
         ]
     },
 
@@ -62,18 +80,10 @@ POLICIES = [
     {
         "name": "flavors:get",
         "description": "Ability to get a flavor",
-        "tags": [
-            "viewer",
-            "service_account"
-        ]
     },
     {
         "name": "flavors:list",
         "description": "Ability to list flavors",
-        "tags": [
-            "viewer",
-            "service_account"
-        ]
     },
     {
         "name": "flavors:delete",
@@ -88,16 +98,10 @@ POLICIES = [
     {
         "name": "regions:get",
         "description": "Ability to get a region",
-        "tags": [
-            "viewer"
-        ]
     },
     {
         "name": "regions:list",
         "description": "Ability to list regions",
-        "tags": [
-            "viewer"
-        ]
     },
     {
         "name": "regions:delete",
@@ -116,16 +120,10 @@ POLICIES = [
     {
         "name": "zones:get",
         "description": "Ability to get a zone",
-        "tags": [
-            "viewer"
-        ]
     },
     {
         "name": "zones:list",
         "description": "Ability to list zones",
-        "tags": [
-            "viewer"
-        ]
     },
     {
         "name": "zones:delete",
@@ -144,9 +142,6 @@ POLICIES = [
     {
         "name": "projects:get",
         "description": "Ability to get a project",
-        "tags": [
-            "viewer"
-        ]
     },
     {
         "name": "projects:get:all",
@@ -155,9 +150,6 @@ POLICIES = [
     {
         "name": "projects:list",
         "description": "Ability to list projects",
-        "tags": [
-            "viewer"
-        ]
     },
     {
         "name": "projects:list:all",
@@ -179,44 +171,50 @@ POLICIES = [
         "name": "projects:members:add",
         "description": "Ability to add a member to a project",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "projects:members:get",
         "description": "Ability to get a member in a project",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "projects:members:list",
         "description": "Ability to list members in a project",
         "tags": [
-            "project_member",
-            "service_account"
+            "project",
+            "default_project_member",
+            "default_service_account"
         ]
     },
     {
         "name": "projects:members:modify",
         "description": "Ability to modify a project member's roles",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "projects:members:remove",
         "description": "Ability to remove a member from a project",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "projects:quota:get",
         "description": "Ability to get a project's quota",
         "tags": [
-            "project_member",
-            "service_account"
+            "project",
+            "default_project_member",
+            "default_service_account"
         ]
     },
     {
@@ -226,57 +224,68 @@ POLICIES = [
     # Volumes
     {
         "name": "volumes:create",
-        "description": "Ability to create a volume"
+        "description": "Ability to create a volume",
+        "tags": [
+            "project",
+            "default_project_member",
+        ]
     },
     {
         "name": "volumes:get",
         "description": "Ability to get a volume",
         "tags": [
-            "project_member",
-            "service_account"
+            "project",
+            "default_project_member",
+            "default_service_account"
         ]
     },
     {
         "name": "volumes:list",
         "description": "Ability to list volumes",
         "tags": [
-            "project_member",
-            "service_account"
+            "project",
+            "default_project_member",
+            "default_service_account"
         ]
     },
     {
         "name": "volumes:delete",
         "description": "Ability to delete a volume",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "volumes:action:attach",
         "description": "Ability to attach a volume to an instance",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "volumes:action:detach",
         "description": "Ability to detach a volume from an instance",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "volumes:action:grow",
         "description": "Ability to grow a volume",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "volumes:action:clone",
         "description": "Ability to clone a volume",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
 
@@ -289,30 +298,34 @@ POLICIES = [
         "name": "images:get",
         "description": "Ability to get an image",
         "tags": [
-            "project_member",
-            "service_account"
+            "project",
+            "default_project_member",
+            "default_service_account"
         ]
     },
     {
         "name": "images:list",
         "description": "Ability to list images",
         "tags": [
-            "project_member",
-            "service_account"
+            "project",
+            "default_project_member",
+            "default_service_account"
         ]
     },
     {
         "name": "images:delete",
         "description": "Ability to delete an image",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "images:action:visibility",
         "description": "Ability to change the image visibility",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
@@ -323,35 +336,40 @@ POLICIES = [
         "name": "images:action:lock",
         "description": "Ability to lock an image",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "images:action:unlock",
         "description": "Ability to unlock an image",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "images:members:add",
         "description": "Ability to add a member to an image",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "images:members:list",
         "description": "Ability to list image members",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "images:members:delete",
         "description": "Ability to delete a member from an image",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
 
@@ -360,72 +378,82 @@ POLICIES = [
         "name": "instances:create",
         "description": "Ability to create an instance",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "instances:get",
         "description": "Ability to get an instance",
         "tags": [
-            "project_member",
-            "service_account"
+            "project",
+            "default_project_member",
+            "default_service_account"
         ]
     },
     {
         "name": "instances:list",
         "description": "Ability to list instances",
         "tags": [
-            "project_member",
-            "service_account"
+            "project",
+            "default_project_member",
+            "default_service_account"
         ]
     },
     {
         "name": "instances:delete",
         "description": "Ability to delete an instance",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "instances:action:stop",
         "description": "Ability to stop an instance",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "instances:action:start",
         "description": "Ability to start an instance",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "instances:action:restart",
         "description": "Ability to restart an instance",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "instances:action:image",
         "description": "Ability to create an image from an instance",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "instances:action:reset_state",
         "description": "Ability to reset the state of an instance to error",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "instances:action:reset_state:active",
         "description": "Ability to reset the state of an instance to active",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
 
@@ -437,16 +465,10 @@ POLICIES = [
     {
         "name": "networks:get",
         "description": "Ability to get a network",
-        "tags": [
-            "viewer"
-        ]
     },
     {
         "name": "networks:list",
         "description": "Ability to list networks",
-        "tags": [
-            "viewer"
-        ]
     },
     {
         "name": "networks:delete",
@@ -455,33 +477,37 @@ POLICIES = [
 
     # Service Accounts
     {
-        "name": "service_accounts:create",
+        "name": "default_service_accounts:create",
         "description": "Ability to create a service account",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
-        "name": "service_accounts:get",
+        "name": "default_service_accounts:get",
         "description": "Ability to get a service account",
         "tags": [
-            "project_member",
-            "service_account"
+            "project",
+            "default_project_member",
+            "default_service_account"
         ]
     },
     {
-        "name": "service_accounts:list",
+        "name": "default_service_accounts:list",
         "description": "Ability to list service accounts",
         "tags": [
-            "project_member",
-            "service_account"
+            "project",
+            "default_project_member",
+            "default_service_account"
         ]
     },
     {
-        "name": "service_accounts:delete",
+        "name": "default_service_accounts:delete",
         "description": "Ability to delete a service account",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
 
@@ -520,30 +546,34 @@ POLICIES = [
         "name": "keypairs:create",
         "description": "Ability to create a keypair",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
     {
         "name": "keypairs:get",
         "description": "Ability to get a keypair",
         "tags": [
-            "project_member",
-            "service_account"
+            "project",
+            "default_project_member",
+            "default_service_account"
         ]
     },
     {
         "name": "keypairs:list",
         "description": "Ability to list keypairs",
         "tags": [
-            "project_member",
-            "service_account"
+            "project",
+            "default_project_member",
+            "default_service_account"
         ]
     },
     {
         "name": "keypairs:delete",
         "description": "Ability to delete a keypair",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     },
 
@@ -552,22 +582,25 @@ POLICIES = [
         "name": "network_ports:get",
         "description": "Ability to get a network port",
         "tags": [
-            "project_member",
-            "service_account"
+            "project",
+            "default_project_member",
+            "default_service_account"
         ]
     },
     {
         "name": "network_ports:list",
         "description": "Ability to list  network ports",
         "tags": [
-            "project_member",
-            "service_account"
+            "project",
+            "default_project_member",
+            "default_service_account"
         ]
     },
     {
         "name": "network_ports:delete",
         "description": "Ability to delete a network port",
         "tags": [
-            "project_member"
+            "project",
+            "default_project_member"
         ]
     }]

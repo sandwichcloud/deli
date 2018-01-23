@@ -27,24 +27,15 @@ class GlobalRole(GlobalResourceModel):
     @classmethod
     def create_default_roles(cls):
         admin_policies = []
-        viewer_policies = []
 
         for policy in POLICIES:
             admin_policies.append(policy['name'])
-            if 'viewer' in policy.get('tags', []):
-                viewer_policies.append(policy['name'])
 
         admin_role = cls()
         admin_role.name = "admin"
         admin_role.policies = admin_policies
         if cls.get_by_name(admin_role.name) is None:
             admin_role.create()
-
-        viewer_role = cls()
-        viewer_role.name = "viewer"
-        viewer_role.policies = viewer_policies
-        if cls.get_by_name(viewer_role.name) is None:
-            viewer_role.create()
 
 
 class ProjectRole(ProjectResourceModel):
@@ -75,9 +66,9 @@ class ProjectRole(ProjectResourceModel):
 
         for policy in POLICIES:
             tags = policy.get('tags', [])
-            if 'project_member' in tags:
+            if 'default_project_member' in tags:
                 member_policies.append(policy['name'])
-            if 'service_account' in tags:
+            if 'default_service_account' in tags:
                 service_account_policies.append(policy['name'])
 
         member_role = cls()

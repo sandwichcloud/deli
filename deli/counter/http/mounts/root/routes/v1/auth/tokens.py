@@ -12,7 +12,7 @@ from deli.kubernetes.resources.v1alpha1.project_member.model import ProjectMembe
 from deli.kubernetes.resources.v1alpha1.role.model import GlobalRole, ProjectRole
 
 
-class AuthNTokenRouter(Router):
+class AuthTokenRouter(Router):
     def __init__(self):
         super().__init__('tokens')
 
