@@ -32,9 +32,6 @@ class GlobalRoleController(ModelController):
         model.save()
 
     def created(self, model: GlobalRole):
-        if model.name != 'admin':
-            return
-
         if model.policies == POLICIES:
             return
 
@@ -81,10 +78,6 @@ class ProjectRoleController(ModelController):
         model.save()
 
     def created(self, model: ProjectRole):
-
-        if model.name != ['default-member', 'default-service-account']:
-            return
-
         member_policies = []
         service_account_policies = []
 

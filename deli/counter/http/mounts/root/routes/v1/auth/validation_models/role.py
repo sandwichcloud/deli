@@ -19,8 +19,7 @@ class ParamsListRoles(Model):
 
 
 class RequestRoleUpdate(Model):
-    add = ListType(StringType, default=list)
-    remove = ListType(StringType, default=list)
+    policies = ListType(StringType, min_size=1)
 
 
 class ResponseRole(Model):

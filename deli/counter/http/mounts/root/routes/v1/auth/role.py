@@ -62,25 +62,16 @@ class RoleHelper(object):
             raise cherrypy.HTTPError(409, 'Cannot update the default roles')
 
         policy_names = [p['name'] for p in POLICIES]
-        new_policies = list(role.policies)
 
-        for add in request.add:
+        for policy in request.policies:
+            if policy not in policy_names:
+                raise cherrypy.HTTPError(404, 'Unknown policy %s' % policy)
             if project is not None:
-                i = policy_names.index(add)
+                i = policy_names.index(policy)
                 if 'project' not in POLICIES[i].get('tags', []):
-                    raise cherrypy.HTTPError(409, 'Cannot add non-project policy %s to project role' % add)
-            if add not in policy_names:
-                raise cherrypy.HTTPError(404, 'Unknown policy %s' % add)
-            if add in new_policies:
-                raise cherrypy.HTTPError(409, 'Policy %s already added to role' % add)
-            new_policies.append(add)
+                    raise cherrypy.HTTPError(409, 'Cannot add non-project policy %s to project role' % policy)
 
-        for remove in request.remove:
-            if remove not in new_policies:
-                raise cherrypy.HTTPError(409, 'Policy %s is not in role' % remove)
-            new_policies.remove(remove)
-
-        role.policies = new_policies
+        role.policies = request.policies
         role.save()
 
     def helper_delete(self):
