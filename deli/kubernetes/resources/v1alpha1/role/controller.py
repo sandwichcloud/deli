@@ -32,10 +32,15 @@ class GlobalRoleController(ModelController):
         model.save()
 
     def created(self, model: GlobalRole):
-        if model.policies == POLICIES:
+        if model.name != 'admin':
             return
 
-        model.policies = [p['name'] for p in POLICIES]
+        policy_names = [p['name'] for p in POLICIES]
+
+        if model.policies == policy_names:
+            return
+
+        model.policies = policy_names
         model.save()
 
     def to_delete(self, model):
@@ -78,6 +83,9 @@ class ProjectRoleController(ModelController):
         model.save()
 
     def created(self, model: ProjectRole):
+        if model.name not in ['default-member', 'default-service-account']:
+            return
+
         member_policies = []
         service_account_policies = []
 
