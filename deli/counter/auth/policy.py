@@ -440,22 +440,6 @@ POLICIES = [
             "default_project_member"
         ]
     },
-    {
-        "name": "instances:action:reset_state",
-        "description": "Ability to reset the state of an instance to error",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "instances:action:reset_state:active",
-        "description": "Ability to reset the state of an instance to active",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
 
     # Networks
     {
@@ -477,7 +461,7 @@ POLICIES = [
 
     # Service Accounts
     {
-        "name": "default_service_accounts:create",
+        "name": "service_accounts:create",
         "description": "Ability to create a service account",
         "tags": [
             "project",
@@ -485,7 +469,7 @@ POLICIES = [
         ]
     },
     {
-        "name": "default_service_accounts:get",
+        "name": "service_accounts:get",
         "description": "Ability to get a service account",
         "tags": [
             "project",
@@ -494,7 +478,7 @@ POLICIES = [
         ]
     },
     {
-        "name": "default_service_accounts:list",
+        "name": "service_accounts:list",
         "description": "Ability to list service accounts",
         "tags": [
             "project",
@@ -503,42 +487,21 @@ POLICIES = [
         ]
     },
     {
-        "name": "default_service_accounts:delete",
-        "description": "Ability to delete a service account",
+        "name": "service_accounts:update",
+        "description": "Ability to update a service account",
         "tags": [
             "project",
             "default_project_member"
         ]
     },
 
-    # Database Users
     {
-        "name": "database:users:create",
-        "description": "Ability to create users",
-    },
-    {
-        "name": "database:users:get",
-        "description": "Ability to get a user"
-    },
-    {
-        "name": "database:users:list",
-        "description": "Ability to list users"
-    },
-    {
-        "name": "database:users:delete",
-        "description": "Ability to delete a user"
-    },
-    {
-        "name": "database:users:password",
-        "description": "Ability to change a user's password"
-    },
-    {
-        "name": "database:users:role:add",
-        "description": "Ability to add a role to a user"
-    },
-    {
-        "name": "database:users:role:remove",
-        "description": "Ability to remove a user from a role"
+        "name": "service_accounts:delete",
+        "description": "Ability to delete a service account",
+        "tags": [
+            "project",
+            "default_project_member"
+        ]
     },
 
     # Keypairs
@@ -603,4 +566,30 @@ POLICIES = [
             "project",
             "default_project_member"
         ]
+    },
+
+    # Database Users
+    {
+        "name": "database:users:create",
+        "description": "Ability to create users",
+    },
+    {
+        "name": "database:users:get",
+        "description": "Ability to get a user"
+    },
+    {
+        "name": "database:users:list",
+        "description": "Ability to list users"
+    },
+    {
+        "name": "database:users:delete",
+        "description": "Ability to delete a user"
+    },
+    {
+        "name": "database:users:password",
+        "description": "Ability to change a user's password"
+    },
+    {
+        "name": "database:users:roles:update",
+        "description": "Ability to update a user's roles"
     }]

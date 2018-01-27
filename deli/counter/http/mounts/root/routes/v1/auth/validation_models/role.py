@@ -1,7 +1,7 @@
 from schematics import Model
 from schematics.types import ListType, UUIDType, IntType, StringType
 
-from deli.http.schematics.types import KubeName
+from deli.http.schematics.types import KubeName, ArrowType
 
 
 class RequestCreateRole(Model):
@@ -26,6 +26,7 @@ class ResponseRole(Model):
     id = UUIDType(required=True)
     name = KubeName(required=True, min_length=3)
     policies = ListType(StringType, default=list)
+    created_at = ArrowType(required=True)
 
     @classmethod
     def from_database(cls, role):
@@ -33,5 +34,6 @@ class ResponseRole(Model):
         model.id = role.id
         model.name = role.name
         model.policies = role.policies
+        model.created_at = role.created_at
 
         return model

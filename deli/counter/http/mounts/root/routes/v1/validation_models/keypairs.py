@@ -5,6 +5,7 @@ from schematics import Model
 from schematics.exceptions import ValidationError
 from schematics.types import UUIDType, IntType, StringType
 
+from deli.http.schematics.types import ArrowType
 from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
 
 
@@ -36,6 +37,7 @@ class ResponseKeypair(Model):
     id = UUIDType(required=True)
     name = StringType(required=True, min_length=3)
     public_key = StringType(required=True)
+    created_at = ArrowType(required=True)
 
     @classmethod
     def from_database(cls, keypair: Keypair):
@@ -43,5 +45,6 @@ class ResponseKeypair(Model):
         model.id = keypair.id
         model.name = keypair.name
         model.public_key = keypair.public_key
+        model.created_at = keypair.created_at
 
         return model

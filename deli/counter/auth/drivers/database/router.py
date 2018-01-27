@@ -125,11 +125,11 @@ class DatabaseAuthRouter(Router):
             user.password = request.password
             session.commit()
 
-    @Route(route='users/{user_id}/role/add', methods=[RequestMethods.PUT])
+    @Route(route='users/{user_id}/roles', methods=[RequestMethods.POST])
     @cherrypy.tools.model_params(cls=ParamsDatabaseUser)
-    @cherrypy.tools.enforce_policy(policy_name="database:users:role:add")
+    @cherrypy.tools.enforce_policy(policy_name="database:users:roles:update")
     @cherrypy.tools.model_in(cls=RequestDatabaseUserRole)
-    def add_user_role(self, user_id):
+    def update_user_role(self, user_id):
         cherrypy.response.status = 204
         request: RequestDatabaseUserRole = cherrypy.request.model
         with self.driver.database.session() as session:
@@ -141,34 +141,11 @@ class DatabaseAuthRouter(Router):
             if user.username == "admin":
                 raise cherrypy.HTTPError(400, "Cannot change roles for the admin user.")
 
-            user_role = UserRole()
-            user_role.role = request.role
-            session.add(user_role)
+            user.roles = []
+            for role in request.roles:
+                user_role = UserRole()
+                user_role.role = role
+                session.add(user_role)
+                user.roles.append(user_role)
 
-            user.roles.append(user_role)
-            session.commit()
-
-    @Route(route='users/{user_id}/role/remove', methods=[RequestMethods.PUT])
-    @cherrypy.tools.model_params(cls=ParamsDatabaseUser)
-    @cherrypy.tools.enforce_policy(policy_name="database:users:role:remove")
-    @cherrypy.tools.model_in(cls=RequestDatabaseUserRole)
-    def remove_user_role(self, user_id):
-        cherrypy.response.status = 204
-        request: RequestDatabaseUserRole = cherrypy.request.model
-        with self.driver.database.session() as session:
-            user: User = session.query(User).filter(User.id == user_id).first()
-
-            if user is None:
-                raise cherrypy.HTTPError(404, "The resource could not be found.")
-
-            if user.username == "admin":
-                raise cherrypy.HTTPError(400, "Cannot change roles for the admin user.")
-
-            user_role = session.query(UserRole).join(User).filter(User.id == user_id).filter(
-                UserRole.role == request.role).first()
-
-            if user_role is None:
-                raise cherrypy.HTTPError(400, "User does not have the requested role.")
-
-            session.delete(user_role)
             session.commit()

@@ -51,4 +51,4 @@ class RequestDatabaseChangePassword(Model):
 
 
 class RequestDatabaseUserRole(Model):
-    role = StringType(required=True)
+    roles = ListType(StringType, required=True, min_size=1)

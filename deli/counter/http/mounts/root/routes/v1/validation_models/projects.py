@@ -87,6 +87,7 @@ class ResponseProjectMember(Model):
     username = StringType(required=True)
     driver = StringType(required=True)
     roles = ListType(UUIDType, default=list)
+    created_at = ArrowType(required=True)
 
     @classmethod
     def from_database(cls, project_member: ProjectMember):
@@ -95,5 +96,6 @@ class ResponseProjectMember(Model):
         model.username = project_member.username
         model.driver = project_member.driver
         model.roles = project_member.roles
+        model.created_at = project_member.created_at
 
         return model

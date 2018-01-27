@@ -67,11 +67,6 @@ AUTH_DRIVERS = os.environ.get('AUTH_DRIVERS', "deli.counter.auth.drivers.databas
 AUTH_FERNET_KEYS = os.environ['AUTH_FERNET_KEYS'].split(",")
 
 ####################
-# Database AUTH    #
-####################
-# Does database auth need any params?
-
-####################
 # GITHUB AUTH      #
 ####################
 
