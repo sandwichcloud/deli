@@ -104,9 +104,7 @@ class VMClient(object):
         if instance is None:
             return
 
-        data = instance.tags.get('user-data', '#cloud-config\n{}')
-
-        await self.write(PacketCode.RESPONSE_USERDATA, data)
+        await self.write(PacketCode.RESPONSE_USERDATA, instance.user_data)
 
     async def write_security_data(self):
 

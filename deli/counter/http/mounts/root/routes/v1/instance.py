@@ -145,6 +145,8 @@ class InstanceRouter(Router):
         instance.service_account = service_account
         instance.network_port = network_port
         instance.keypairs = keypairs
+        if request.user_data is not None:
+            instance.user_data = request.user_data
         for k, v in request.tags.items():
             instance.add_tag(k, v)
 

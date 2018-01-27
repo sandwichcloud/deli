@@ -45,6 +45,7 @@ class Instance(ProjectResourceModel):
                     'disk': 20,
                 },
                 'keypairs': [],
+                'userData': '#cloud-config\n{}'
             }
             self._raw['status']['task'] = {
                 'name': None,
@@ -122,6 +123,14 @@ class Instance(ProjectResourceModel):
     @service_account.setter
     def service_account(self, value):
         self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL] = str(value.id)
+
+    @property
+    def user_data(self):
+        return self._raw['spec']['userData']
+
+    @user_data.setter
+    def user_data(self, value):
+        self._raw['spec']['userData'] = value
 
     @property
     def power_state(self):

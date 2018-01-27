@@ -16,6 +16,7 @@ class RequestCreateInstance(Model):
     zone_id = UUIDType()
     keypair_ids = ListType(UUIDType, default=list)
     tags = DictType(KubeString, default=dict)
+    user_data = StringType()
 
     flavor_id = UUIDType(required=True)
     disk = IntType()
@@ -44,6 +45,7 @@ class ResponseInstance(Model):
 
     task = EnumType(VMTask)
     tags = DictType(KubeString, default=dict)
+    user_data = StringType()
     error_message = StringType()
     created_at = ArrowType(required=True)
 
@@ -80,6 +82,7 @@ class ResponseInstance(Model):
         instance_model.task = instance.task
 
         instance_model.tags = instance.tags
+        instance_model.user_data = instance_model.user_data
         instance_model.created_at = instance.created_at
         return instance_model
 
