@@ -174,7 +174,7 @@ class InstanceController(ModelController):
                 model.power_state = VMPowerState.POWERED_ON
                 model.task = None
             elif model.task == VMTask.STOPPING or model.task == VMTask.RESTARTING:
-                is_shutdown = self.shutdown(vmware_client, vmware_vm, model)
+                is_shutdown = self.shutdown_vm(vmware_client, vmware_vm, model)
                 if is_shutdown:
                     if model.task == VMTask.RESTARTING:
                         self.vmware.power_on_vm(vmware_client, vmware_vm)
@@ -206,7 +206,7 @@ class InstanceController(ModelController):
             else:
                 model.power_state = VMPowerState.POWERED_OFF
 
-    def shutdown(self, vmware_client, vmware_vm, model):
+    def shutdown_vm(self, vmware_client, vmware_vm, model):
         if 'timeout_at' not in model.task_kwargs:
             hard = model.task_kwargs['hard']
             if hard:
@@ -249,7 +249,7 @@ class InstanceController(ModelController):
                 else:
                     power_state = str(vmware_vm.runtime.powerState)
                     if power_state == 'poweredOn':
-                        is_shutdown = self.shutdown(vmware_client, vmware_vm, model)
+                        is_shutdown = self.shutdown_vm(vmware_client, vmware_vm, model)
                         if is_shutdown is False:
                             return
 
