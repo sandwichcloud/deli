@@ -93,7 +93,7 @@ class VolumeRouter(Router):
         cherrypy.response.status = 204
 
         volume: Volume = cherrypy.request.resource_object
-        if volume.task is not None:
+        if volume.task is not None and volume.state != ResourceState.Error:
             raise cherrypy.HTTPError(400, "Please wait for the current task to finish.")
         if volume.state == ResourceState.ToDelete or volume.state == ResourceState.Deleting:
             raise cherrypy.HTTPError(400, "Volume is already being deleting")

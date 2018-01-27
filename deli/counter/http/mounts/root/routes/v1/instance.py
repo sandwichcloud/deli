@@ -210,7 +210,7 @@ class InstanceRouter(Router):
         cherrypy.response.status = 204
 
         instance: Instance = cherrypy.request.resource_object
-        if instance.task is not None:
+        if instance.task is not None and instance.state != ResourceState.Error:
             raise cherrypy.HTTPError(400, "Please wait for the current task to finish.")
         if instance.state == ResourceState.ToDelete or instance.state == ResourceState.Deleting:
             raise cherrypy.HTTPError(400, "Instance is already being deleting")

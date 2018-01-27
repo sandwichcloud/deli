@@ -125,15 +125,9 @@ class VMWare(object):
         nic.device.connectable.allowGuestControl = True
 
         vmconf = vim.vm.ConfigSpec()
-        vmconf.numCPUs = vcpus  # TODO: allow customization of these
+        vmconf.numCPUs = vcpus
         vmconf.memoryMB = ram
         vmconf.deviceChange = [nic]
-
-        vmconf.bootOptions = vim.vm.BootOptions()
-        # Set the boot device to the first disk just in-case it was set to something else
-        boot_disk_device = vim.vm.BootOptions.BootableDiskDevice()
-        boot_disk_device.deviceKey = 2000
-        vmconf.bootOptions.bootOrder = [boot_disk_device]
 
         enable_uuid_opt = vim.option.OptionValue()
         enable_uuid_opt.key = 'disk.enableUUID'  # Allow the guest to easily mount extra disks
