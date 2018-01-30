@@ -13,21 +13,21 @@ services:
     volumes:
       - etcd:/var/lib/etcd
   kube-api:
-    image: gcr.io/google_containers/hyperkube-amd64:v1.7.8
+    image: gcr.io/google_containers/hyperkube-amd64:v1.9.2
     command:
       - kube-apiserver
       - --etcd-servers=http://etcd:2379
       - --service-cluster-ip-range=10.96.0.0/16
-      - --admission-control=Initializers,NamespaceLifecycle
+      - --admission-control=Initializers,NamespaceExists,NamespaceLifecycle
       - --insecure-bind-address=0.0.0.0
-      - --insecure-allow-any-token
+      - --anonymous-auth=true
     networks:
       - sandwich
     ports:
       - "8081:8080"
   # Controller manager is needed to run the namespace lifecycle
   kube-controller-manager:
-    image: gcr.io/google_containers/kube-controller-manager-amd64:v1.7.8
+    image: gcr.io/google_containers/kube-controller-manager-amd64:v1.9.2
     command:
       - kube-controller-manager
       - --controllers=*,tokencleaner  # TODO: figure out what controllers we actually need

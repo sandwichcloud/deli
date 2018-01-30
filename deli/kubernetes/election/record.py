@@ -1,6 +1,7 @@
 import json
 
 from kubernetes import client
+from kubernetes.client import V1Endpoints
 from kubernetes.client.rest import ApiException
 
 from deli.kubernetes.resources.const import GROUP
@@ -29,6 +30,18 @@ class ElectionRecord(object):
     @classmethod
     def get(cls, safe=True):
         core_api = client.CoreV1Api()
+
+        # Fix k8 1.9 compatibility
+        # Similar issue to https://github.com/kubernetes-client/python/issues/415
+        @property
+        def subsets(self):
+            return self._subsets
+
+        @subsets.setter
+        def subsets(self, subsets):
+            self._subsets = subsets
+
+        V1Endpoints.subsets = subsets
         try:
             resp = core_api.read_namespaced_endpoints("sandwich-controller", "kube-system").to_dict()
             if resp is None:

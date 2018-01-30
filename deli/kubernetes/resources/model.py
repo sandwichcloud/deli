@@ -5,7 +5,7 @@ import uuid
 
 import arrow
 from kubernetes import client
-from kubernetes.client import V1DeleteOptions
+from kubernetes.client import V1DeleteOptions, V1beta1CustomResourceDefinitionStatus
 from kubernetes.client.rest import ApiException
 
 from deli.kubernetes.resources.const import GROUP, NAME_LABEL, ID_LABEL
@@ -127,6 +127,27 @@ class ResourceModel(object):
                 }
             }
         }
+
+        # Patching the client to get around this issue:
+        # https://github.com/kubernetes-incubator/client-python/issues/415
+        @property
+        def accepted_names(self):
+            return self._accepted_names
+
+        @accepted_names.setter
+        def accepted_names(self, accepted_names):
+            self._accepted_names = accepted_names
+
+        @property
+        def conditions(self):
+            return self._conditions
+
+        @conditions.setter
+        def conditions(self, conditions):
+            self._conditions = conditions
+
+        V1beta1CustomResourceDefinitionStatus.accepted_names = accepted_names
+        V1beta1CustomResourceDefinitionStatus.conditions = conditions
         try:
             api_extensions_api.create_custom_resource_definition(crd)
         except ApiException as e:
