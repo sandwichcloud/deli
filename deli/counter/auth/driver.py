@@ -25,6 +25,10 @@ class AuthDriver(object):
     def auth_router(self) -> Router:
         raise NotImplementedError
 
+    @abstractmethod
+    def health(self):
+        return None
+
     def generate_user_token(self, expires_at, username, global_role_names, project=None, project_role_ids=None):
         fernet = Fernet(settings.AUTH_FERNET_KEYS[0])
 

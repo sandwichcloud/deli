@@ -22,3 +22,16 @@ class DatabaseAuthDriver(AuthDriver):
 
     def auth_router(self) -> Router:
         return DatabaseAuthRouter(self)
+
+    def health(self):
+        health = {
+            'healthy': False,
+            'valid_session': False
+        }
+        try:
+            with self.database.session() as session:
+                session.execute("SELECT 1")
+                health['healthy'] = True
+                health['valid_session'] = True
+        finally:
+            return health

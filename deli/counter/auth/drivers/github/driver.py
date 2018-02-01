@@ -1,5 +1,6 @@
 from typing import Dict
 
+import github
 from github.NamedUser import NamedUser
 from simple_settings import settings
 
@@ -23,6 +24,27 @@ class GithubAuthDriver(AuthDriver):
                 return True
 
         return False
+
+    def health(self):
+        health = {
+            'healthy': False,
+            'valid_credentials': False
+        }
+        try:
+            client = github.Github(client_id=settings.GITHUB_CLIENT_ID, client_secret=settings.GITHUB_CLIENT_SECRET,
+                                   base_url=settings.GITHUB_URL)
+            remaining, limit = client.rate_limiting
+            health['valid_credentials'] = True
+            health['rate'] = {
+                'limit': limit,
+                'remaining': remaining
+            }
+            if remaining > 10:
+                health['healthy'] = True
+        except Exception:
+            self.logger.exception("Error getting auth driver health")
+        finally:
+            return health
 
     def find_roles(self, github_user):
         roles = []
