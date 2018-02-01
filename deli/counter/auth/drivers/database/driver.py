@@ -33,5 +33,7 @@ class DatabaseAuthDriver(AuthDriver):
                 session.execute("SELECT 1")
                 health['healthy'] = True
                 health['valid_session'] = True
+        except Exception:
+            self.logger.exception("Error getting auth driver health")
         finally:
             return health
