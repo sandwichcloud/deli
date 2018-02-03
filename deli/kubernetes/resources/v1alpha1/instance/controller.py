@@ -108,6 +108,7 @@ class InstanceController(ModelController):
 
                 create_vm_task = self.vmware.create_vm_from_image(vm_name=str(model.id),
                                                                   image=vmware_image,
+                                                                  datacenter=datacenter,
                                                                   cluster=cluster,
                                                                   datastore=datastore,
                                                                   folder=folder,

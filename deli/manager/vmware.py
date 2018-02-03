@@ -97,7 +97,7 @@ class VMWare(object):
             # Ignore error if the disk is already detached
             pass
 
-    def create_vm_from_image(self, vm_name, image, cluster, datastore, folder, port_group, vcpus, ram):
+    def create_vm_from_image(self, vm_name, image, datacenter, cluster, datastore, folder, port_group, vcpus, ram):
 
         relospec = vim.vm.RelocateSpec()
         relospec.datastore = datastore
@@ -139,7 +139,7 @@ class VMWare(object):
         if folder is not None:
             task = image.Clone(folder=folder, name=vm_name, spec=clonespec)
         else:
-            task = image.Clone(name=vm_name, spec=clonespec)
+            task = image.Clone(folder=datacenter.vmFolder, name=vm_name, spec=clonespec)
 
         return task
 
@@ -163,6 +163,7 @@ class VMWare(object):
         virtual_disk_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.edit
         virtual_disk_spec.device = virtual_disk_device
         virtual_disk_spec.device.capacityInBytes = new_size * (1024 ** 3)
+        virtual_disk_spec.device.backing.thinProvisioned = True
 
         spec = vim.vm.ConfigSpec()
         spec.deviceChange = [virtual_disk_spec]

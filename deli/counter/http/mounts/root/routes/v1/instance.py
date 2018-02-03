@@ -226,7 +226,7 @@ class InstanceRouter(Router):
     @cherrypy.tools.project_scope()
     @cherrypy.tools.model_params(cls=ParamsInstance)
     @cherrypy.tools.resource_object(id_param="instance_id", cls=Instance)
-    @cherrypy.tools.enforce_policy(policy_name="nstances:action:stop")
+    @cherrypy.tools.enforce_policy(policy_name="instances:action:stop")
     def action_start(self, **_):
         cherrypy.response.status = 202
 
@@ -246,7 +246,7 @@ class InstanceRouter(Router):
     @cherrypy.tools.model_params(cls=ParamsInstance)
     @cherrypy.tools.model_in(cls=RequestInstancePowerOffRestart)
     @cherrypy.tools.resource_object(id_param="instance_id", cls=Instance)
-    @cherrypy.tools.enforce_policy(policy_name="nstances:action:start")
+    @cherrypy.tools.enforce_policy(policy_name="instances:action:start")
     def action_stop(self, **_):
         request: RequestInstancePowerOffRestart = cherrypy.request.model
         cherrypy.response.status = 202
@@ -267,7 +267,7 @@ class InstanceRouter(Router):
     @cherrypy.tools.model_params(cls=ParamsInstance)
     @cherrypy.tools.model_in(cls=RequestInstancePowerOffRestart)
     @cherrypy.tools.resource_object(id_param="instance_id", cls=Instance)
-    @cherrypy.tools.enforce_policy(policy_name="nstances:action:restart")
+    @cherrypy.tools.enforce_policy(policy_name="instances:action:restart")
     def action_restart(self, **_):
         request: RequestInstancePowerOffRestart = cherrypy.request.model
         cherrypy.response.status = 202
@@ -289,7 +289,7 @@ class InstanceRouter(Router):
     @cherrypy.tools.model_in(cls=RequestInstanceImage)
     @cherrypy.tools.model_out(cls=ResponseImage)
     @cherrypy.tools.resource_object(id_param="instance_id", cls=Instance)
-    @cherrypy.tools.enforce_policy(policy_name="nstances:action:image")
+    @cherrypy.tools.enforce_policy(policy_name="instances:action:image")
     def action_image(self, **_):
         project: Project = cherrypy.request.project
         request: RequestInstanceImage = cherrypy.request.model
