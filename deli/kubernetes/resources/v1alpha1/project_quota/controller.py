@@ -47,7 +47,7 @@ class ProjectQuotaController(ModelController):
         for volume in volumes:
             model.used_disk += volume.size
 
-        model.save()
+        model.save(ignore=True)
 
     def to_delete(self, model):
         model.state = ResourceState.Deleting

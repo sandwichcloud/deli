@@ -10,7 +10,7 @@ class Zone(GlobalResourceModel):
     def __init__(self, raw=None):
         super().__init__(raw)
         if raw is None:
-            self._raw['metadata']['labels'][REGION_LABEL] = None
+            self._raw['metadata']['labels'][REGION_LABEL] = ''
             self._raw['spec'] = {
                 'vmCluster': None,
                 'vmDatastore': None,
@@ -23,11 +23,17 @@ class Zone(GlobalResourceModel):
 
     @property
     def region_id(self):
-        return uuid.UUID(self._raw['metadata']['labels'][REGION_LABEL])
+        region_id = self._raw['metadata']['labels'][REGION_LABEL]
+        if region_id == "":
+            return None
+        return uuid.UUID(region_id)
 
     @property
     def region(self):
-        return Region.get(self._raw['metadata']['labels'][REGION_LABEL])
+        region_id = self.region_id
+        if region_id is None:
+            return None
+        return Region.get(region_id)
 
     @region.setter
     def region(self, value):

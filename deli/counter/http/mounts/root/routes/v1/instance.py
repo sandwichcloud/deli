@@ -154,6 +154,11 @@ class InstanceRouter(Router):
         instance.flavor = flavor
         if request.disk is not None:
             instance.disk = request.disk
+        if request.initial_volumes is not None:
+            initial_volumes = []
+            for initial_volume in request.initial_volumes:
+                initial_volumes.append(initial_volume.to_native())
+            instance.initial_volumes = initial_volumes
 
         instance.create()
 

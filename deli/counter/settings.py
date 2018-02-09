@@ -27,17 +27,24 @@ LOGGING_CONFIG = {
         }
     },
     'loggers': {
-        'deli': {
+        '': {
             'level': LOGGING_LEVEL,
             'handlers': ['console']
         },
+        'deli': {
+            'level': LOGGING_LEVEL,
+            'handlers': ['console'],
+            'propagate': False
+        },
         'cherrypy.access': {
             'level': 'INFO',
-            'handlers': ['console']
+            'handlers': ['console'],
+            'propagate': False
         },
         'cherrypy.error': {
             'level': 'INFO',
-            'handlers': ['console']
+            'handlers': ['console'],
+            'propagate': False
         },
     }
 }

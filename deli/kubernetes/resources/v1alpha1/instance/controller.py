@@ -129,6 +129,52 @@ class InstanceController(ModelController):
                     vmware_vm = self.vmware.get_vm(vmware_client, str(model.id), datacenter)
                     self.vmware.resize_root_disk(vmware_client, model.disk, vmware_vm)
                     self.vmware.setup_serial_connection(vmware_client, self.vspc_url, vmware_vm)
+
+                    if len(model.initial_volumes) > 0:
+                        if len(model.initial_volumes_status) == 0:
+                            initial_volume_ids = []
+                            for idx, volume_data in enumerate(model.initial_volumes):
+                                volume = Volume()
+                                volume.project = model.project
+                                volume.name = str(model.id) + "-" + str(idx)
+                                volume.zone = model.zone
+                                volume.size = volume_data['size']
+                                volume.create()
+
+                                initial_volume_ids.append(str(volume.id))
+                            model.initial_volumes_status = initial_volume_ids
+                            return
+                        else:
+                            attached_vols = 0
+                            for volume_id in model.initial_volumes_status:
+                                volume: Volume = Volume.get(model.project, volume_id)
+                                if volume is None:
+                                    model.error_message = "Volume " + str(
+                                        volume.id) + " has disappeared while trying to attach"
+                                    return
+                                if volume.state in [ResourceState.ToCreate, ResourceState.Creating]:
+                                    continue
+                                if volume.state != ResourceState.Created:
+                                    model.error_message = "Cannot attach volume " + str(
+                                        volume.id) + " while it is in the following state: " + volume.state.value
+                                    return
+                                if volume.attached_to_id == model.id:
+                                    attached_vols += 1
+                                    continue
+                                if volume.attached_to_id is not None and volume.attached_to_id != model.id:
+                                    model.error_message = "Volume " + str(
+                                        volume.id) + " has been attached to another instance."
+                                    return
+                                if volume.task is None:
+                                    volume.attach(model)
+                                    volume.save()
+                                else:
+                                    model.error_message = "Cannot attach volume" + str(
+                                        volume.id) + " while a task is running on it."
+                                    return
+                            if attached_vols != len(model.initial_volumes_status):
+                                return
+
                     self.vmware.power_on_vm(vmware_client, vmware_vm)
                     model.task = None
                     model.state = ResourceState.Created
@@ -155,7 +201,7 @@ class InstanceController(ModelController):
             model.delete()
             return
 
-        defer(model.save)
+        defer(model.save, ignore=True)
 
         # If the image doesn't exist we should clear it
         if model.image_id is not None:
@@ -254,12 +300,26 @@ class InstanceController(ModelController):
                         if is_shutdown is False:
                             return
 
+                    for idx, volume_id in enumerate(model.initial_volumes_status):
+                        delete = model.initial_volumes[idx]['auto_delete']
+                        if delete:
+                            volume: Volume = Volume.get(model.project, volume_id)
+                            if volume is None:
+                                continue
+                            if volume.state in [ResourceState.ToDelete, ResourceState.Deleting, ResourceState.Deleted]:
+                                continue
+                            if volume.attached_to_id == model.id:
+                                volume.delete()
+
                     attached_volumes = Volume.list(model.project,
                                                    label_selector=ATTACHED_TO_LABEL + "=" + str(model.id))
                     if len(attached_volumes) > 0:
                         for volume in attached_volumes:
-                            volume.task = VolumeTask.DETACHING
-                            volume.save()
+                            if volume.state in [ResourceState.ToDelete, ResourceState.Deleting, ResourceState.Deleted]:
+                                continue
+                            if volume.task != VolumeTask.DETACHING:
+                                volume.task = VolumeTask.DETACHING
+                                volume.save()
                         return
 
                     self.vmware.delete_vm(vmware_client, vmware_vm)
@@ -301,7 +361,9 @@ class InstanceController(ModelController):
             vm = self.vmware.get_vm(vmware_client, str(instance.id), datacenter)
             if vm is None:
                 continue
-            host = vm.runtime.host.name
+            # If the  VM doesn't have a host we should reserve it on all hosts
+            host = vm.runtime.host.name if vm.runtime.host is not None else None
+
             if host not in used_resources:
                 used_resources[host] = (instance.vcpus, instance.ram)
             else:
@@ -320,6 +382,12 @@ class InstanceController(ModelController):
             else:
                 available_cores = total_cores
                 available_ram = total_ram
+
+            if None in used_resources:
+                used_cores, used_ram = used_resources[None]
+                available_cores = available_cores - used_cores
+                available_ram = available_ram - used_ram
+
             if available_cores >= model.vcpus and available_ram >= model.ram:
                 return True
 

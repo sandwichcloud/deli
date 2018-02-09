@@ -1,10 +1,15 @@
 from schematics import Model
-from schematics.types import UUIDType, IntType, DictType, ListType, BooleanType, StringType
+from schematics.types import UUIDType, IntType, DictType, ListType, BooleanType, StringType, ModelType
 
 from deli.http.schematics.types import KubeString, EnumType, ArrowType, KubeName
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.v1alpha1.image.model import ImageVisibility
 from deli.kubernetes.resources.v1alpha1.instance.model import Instance, VMPowerState, VMTask
+
+
+class RequestInitialVolumes(Model):
+    size = IntType(required=True, min_value=5)
+    auto_delete = BooleanType(default=False)
 
 
 class RequestCreateInstance(Model):
@@ -20,6 +25,7 @@ class RequestCreateInstance(Model):
 
     flavor_id = UUIDType(required=True)
     disk = IntType()
+    initial_volumes = ListType(ModelType(RequestInitialVolumes), default=list)
 
     def validate_disk(self, data, value):
         if value is not None and value != 0:

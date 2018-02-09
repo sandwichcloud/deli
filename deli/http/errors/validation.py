@@ -2,6 +2,7 @@ import json
 
 import cherrypy
 from cherrypy._cperror import HTTPError, _be_ie_unfriendly, clean_headers
+from schematics.datastructures import FrozenDict
 from schematics.exceptions import DataError
 
 
@@ -18,6 +19,10 @@ def json_errors_to_json(validation_errors, root=None):
                         'pointer': root + "/" + key
                     }
                 })
+            elif isinstance(value, FrozenDict):
+                for k in value.keys():
+                    for field in value[k].keys():
+                        json_errors.extend(json_errors_to_json({str(k): value[k][field]}, root=root + "/" + key))
             else:
                 for error in value:
                     json_errors.append({
@@ -33,7 +38,7 @@ def param_errors_to_json(validation_errors):
     json_errors = []
     for key, value in validation_errors.items():
         if isinstance(value, dict):
-            json_errors.extend(json_errors_to_json(value, root=key))
+            json_errors.extend(param_errors_to_json(value))
         else:
             if isinstance(value, str):
                 json_errors.append({

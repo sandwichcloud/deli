@@ -31,12 +31,12 @@ class Instance(ProjectResourceModel):
     def __init__(self, raw=None):
         super().__init__(raw)
         if raw is None:
-            self._raw['metadata']['labels'][REGION_LABEL] = None
-            self._raw['metadata']['labels'][ZONE_LABEL] = None
-            self._raw['metadata']['labels'][IMAGE_LABEL] = None
-            self._raw['metadata']['labels'][NETWORK_LABEL] = None
-            self._raw['metadata']['labels'][NETWORK_PORT_LABEL] = None
-            self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL] = None
+            self._raw['metadata']['labels'][REGION_LABEL] = ''
+            self._raw['metadata']['labels'][ZONE_LABEL] = ''
+            self._raw['metadata']['labels'][IMAGE_LABEL] = ''
+            self._raw['metadata']['labels'][NETWORK_LABEL] = ''
+            self._raw['metadata']['labels'][NETWORK_PORT_LABEL] = ''
+            self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL] = ''
             self._raw['spec'] = {
                 'flavor': {
                     'id': None,
@@ -45,8 +45,17 @@ class Instance(ProjectResourceModel):
                     'disk': 20,
                 },
                 'keypairs': [],
-                'userData': '#cloud-config\n{}'
+                'userData': '#cloud-config\n{}',
+                'initialVolumes': [
+                    # {
+                    #     "size": 5, size of the volume
+                    #     "auto_delete": True delete the volume if still attached during instance delete
+                    # }
+                ],
             }
+            self._raw['status']['initialVolumes'] = [
+                # UUID of volumes with index matched to spec initialVolumes
+            ]
             self._raw['status']['task'] = {
                 'name': None,
                 'kwargs': {}
@@ -57,11 +66,17 @@ class Instance(ProjectResourceModel):
 
     @property
     def region_id(self):
-        return uuid.UUID(self._raw['metadata']['labels'][REGION_LABEL])
+        region_id = self._raw['metadata']['labels'][REGION_LABEL]
+        if region_id == "":
+            return None
+        return uuid.UUID(region_id)
 
     @property
     def region(self):
-        return Region.get(self._raw['metadata']['labels'][REGION_LABEL])
+        region_id = self.region_id
+        if region_id is None:
+            return None
+        return Region.get(region_id)
 
     @region.setter
     def region(self, value):
@@ -69,15 +84,17 @@ class Instance(ProjectResourceModel):
 
     @property
     def zone_id(self):
-        if self._raw['metadata']['labels'][ZONE_LABEL] is None:
+        zone_id = self._raw['metadata']['labels'][ZONE_LABEL]
+        if zone_id == "":
             return None
-        return uuid.UUID(self._raw['metadata']['labels'][ZONE_LABEL])
+        return uuid.UUID(zone_id)
 
     @property
     def zone(self):
-        if self._raw['metadata']['labels'][ZONE_LABEL] is None:
+        zone_id = self.zone_id
+        if zone_id is None:
             return None
-        return Zone.get(self._raw['metadata']['labels'][ZONE_LABEL])
+        return Zone.get(zone_id)
 
     @zone.setter
     def zone(self, value):
@@ -85,15 +102,17 @@ class Instance(ProjectResourceModel):
 
     @property
     def image_id(self):
-        if self._raw['metadata']['labels'][IMAGE_LABEL] is None:
+        image_id = self._raw['metadata']['labels'][IMAGE_LABEL]
+        if image_id == "":
             return None
-        return uuid.UUID(self._raw['metadata']['labels'][IMAGE_LABEL])
+        return uuid.UUID(image_id)
 
     @property
     def image(self):
-        if self._raw['metadata']['labels'][IMAGE_LABEL] is None:
+        image_id = self.image_id
+        if image_id is None:
             return None
-        return Image.get(self._raw['metadata']['labels'][IMAGE_LABEL])
+        return Image.get(image_id)
 
     @image.setter
     def image(self, value):
@@ -101,11 +120,17 @@ class Instance(ProjectResourceModel):
 
     @property
     def network_port_id(self):
-        return uuid.UUID(self._raw['metadata']['labels'][NETWORK_PORT_LABEL])
+        network_port_id = self._raw['metadata']['labels'][NETWORK_PORT_LABEL]
+        if network_port_id == "":
+            return None
+        return uuid.UUID(network_port_id)
 
     @property
     def network_port(self):
-        return NetworkPort.get(self.project, self._raw['metadata']['labels'][NETWORK_PORT_LABEL])
+        network_port_id = self.network_port_id
+        if network_port_id is None:
+            return None
+        return NetworkPort.get(self.project, network_port_id)
 
     @network_port.setter
     def network_port(self, value):
@@ -114,11 +139,17 @@ class Instance(ProjectResourceModel):
 
     @property
     def service_account_id(self):
-        return uuid.UUID(self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL])
+        service_account_id = self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL]
+        if service_account_id == "":
+            return None
+        return uuid.UUID(service_account_id)
 
     @property
     def service_account(self):
-        return ServiceAccount.get(self.project, self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL])
+        service_account_id = self.service_account_id
+        if service_account_id is None:
+            return None
+        return ServiceAccount.get(self.project, service_account_id)
 
     @service_account.setter
     def service_account(self, value):
@@ -276,3 +307,19 @@ class Instance(ProjectResourceModel):
         self.save()
 
         return image
+
+    @property
+    def initial_volumes(self):
+        return self._raw['spec']['initialVolumes']
+
+    @initial_volumes.setter
+    def initial_volumes(self, value):
+        self._raw['spec']['initialVolumes'] = value
+
+    @property
+    def initial_volumes_status(self):
+        return self._raw['status']['initialVolumes']
+
+    @initial_volumes_status.setter
+    def initial_volumes_status(self, value):
+        self._raw['status']['initialVolumes'] = value

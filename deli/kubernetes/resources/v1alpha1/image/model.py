@@ -18,8 +18,8 @@ class Image(GlobalResourceModel):
     def __init__(self, raw=None):
         super().__init__(raw)
         if raw is None:
-            self._raw['metadata']['labels'][PROJECT_LABEL] = None
-            self._raw['metadata']['labels'][REGION_LABEL] = None
+            self._raw['metadata']['labels'][PROJECT_LABEL] = ''
+            self._raw['metadata']['labels'][REGION_LABEL] = ''
             self._raw['metadata']['labels'][IMAGE_VISIBILITY_LABEL] = ImageVisibility.PRIVATE.value
             self._raw['spec'] = {
                 'fileName': None
@@ -37,11 +37,17 @@ class Image(GlobalResourceModel):
 
     @property
     def project_id(self):
-        return uuid.UUID(self._raw['metadata']['labels'][PROJECT_LABEL])
+        project_id = self._raw['metadata']['labels'][PROJECT_LABEL]
+        if project_id == "":
+            return None
+        return uuid.UUID(project_id)
 
     @property
     def project(self):
-        return Project.get(self._raw['metadata']['labels'][PROJECT_LABEL])
+        project_id = self.project_id
+        if project_id is None:
+            return None
+        return Project.get(project_id)
 
     @project.setter
     def project(self, value):
@@ -50,11 +56,17 @@ class Image(GlobalResourceModel):
 
     @property
     def region_id(self):
-        return uuid.UUID(self._raw['metadata']['labels'][REGION_LABEL])
+        region_id = self._raw['metadata']['labels'][REGION_LABEL]
+        if region_id == "":
+            return None
+        return uuid.UUID(region_id)
 
     @property
     def region(self):
-        return Region.get(self._raw['metadata']['labels'][REGION_LABEL])
+        region_id = self.region_id
+        if region_id is None:
+            return None
+        return Region.get(region_id)
 
     @region.setter
     def region(self, value):

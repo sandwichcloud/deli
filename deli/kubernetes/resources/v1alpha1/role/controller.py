@@ -41,7 +41,7 @@ class GlobalRoleController(ModelController):
             return
 
         model.policies = policy_names
-        model.save()
+        model.save(ignore=True)
 
     def to_delete(self, model):
         model.state = ResourceState.Deleting

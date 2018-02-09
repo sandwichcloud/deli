@@ -79,6 +79,9 @@ class RegionsRouter(Router):
         if region.state == ResourceState.Deleted:
             raise cherrypy.HTTPError(400, "Region has already been deleted")
 
+        if region.schedulable:
+            raise cherrypy.HTTPError(400, 'Region must not be schedulable.')
+
         region.delete()
 
     @Route(route='{region_id}/action/schedule', methods=[RequestMethods.PUT])

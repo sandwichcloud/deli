@@ -135,9 +135,10 @@ class VolumeRouter(Router):
             raise cherrypy.HTTPError(400, 'The requested instance is not in the same region as the volume.')
         if instance.zone_id != volume.zone_id:
             raise cherrypy.HTTPError(400, 'The requested instance is not in the same zone as the volume.')
+        if instance.task is not None:
+            raise cherrypy.HTTPError(400, 'Please wait for the current task on the instance to finish.')
 
-        volume.task = VolumeTask.ATTACHING
-        volume.attached_to = instance
+        volume.attach(instance)
         volume.save()
 
     @Route(route='{volume_id}/action/detach', methods=[RequestMethods.PUT])

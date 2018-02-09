@@ -33,7 +33,7 @@ class ResourceModel(object):
                     "name": id,
                     "labels": {
                         ID_LABEL: id,
-                        NAME_LABEL: None
+                        NAME_LABEL: ''
                     },
                     "finalizers": [
                         'delete.sandwichcloud.com'
@@ -201,10 +201,15 @@ class GlobalResourceModel(ResourceModel):
             return None
         return objs[0]
 
-    def save(self):
+    def save(self, ignore=False):
         crd_api = client.CustomObjectsApi()
-        self._raw = crd_api.replace_cluster_custom_object(GROUP, self.version(), self.name_plural(), str(self.id),
-                                                          self._raw)
+        try:
+            self._raw = crd_api.replace_cluster_custom_object(GROUP, self.version(), self.name_plural(), str(self.id),
+                                                              self._raw)
+        except ApiException as e:
+            if e.status == 409 and ignore:
+                return
+            raise e
 
     @classmethod
     def list_sig(cls):
@@ -285,11 +290,15 @@ class ProjectResourceModel(ResourceModel):
             return None
         return objs[0]
 
-    def save(self):
+    def save(self, ignore=False):
         crd_api = client.CustomObjectsApi()
-        self._raw = crd_api.replace_namespaced_custom_object(GROUP, self.version(), str(self.project.id),
-                                                             self.name_plural(),
-                                                             str(self.id), self._raw)
+        try:
+            self._raw = crd_api.replace_namespaced_custom_object(GROUP, self.version(), str(self.project.id),
+                                                                 self.name_plural(), str(self.id), self._raw)
+        except ApiException as e:
+            if e.status == 409 and ignore:
+                return
+            raise e
 
     @classmethod
     def list_sig(cls):

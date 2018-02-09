@@ -46,7 +46,7 @@ class ServiceAccountController(ModelController):
 
         # Some roles no longer exist so we need to fix that
         model.roles = roles
-        model.save()
+        model.save(ignore=True)
 
     def to_delete(self, model):
         model.state = ResourceState.Deleting

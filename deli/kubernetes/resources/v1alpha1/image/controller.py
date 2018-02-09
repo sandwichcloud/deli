@@ -64,7 +64,7 @@ class ImageController(ModelController):
         for member_id in model.member_ids():
             if Project.get(member_id) is None:
                 model.remove_member(member_id)
-                model.save()
+        model.save(ignore=True)
 
     def to_delete(self, model):
         model.state = ResourceState.Deleting

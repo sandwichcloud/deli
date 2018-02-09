@@ -2,6 +2,7 @@ from go_defer import with_defer, defer
 
 from deli.kubernetes.controller import ModelController
 from deli.kubernetes.resources.model import ResourceState
+from deli.kubernetes.resources.v1alpha1.instance.model import Instance
 from deli.kubernetes.resources.v1alpha1.region.model import Region
 from deli.kubernetes.resources.v1alpha1.volume.model import Volume, VolumeTask
 from deli.kubernetes.resources.v1alpha1.zone.model import Zone
@@ -74,7 +75,7 @@ class VolumeController(ModelController):
 
     @with_defer
     def created(self, model: Volume):
-        defer(model.save)
+        defer(model.save, ignore=True)
 
         zone = model.zone
         if zone.state == ResourceState.Deleting:
@@ -84,11 +85,27 @@ class VolumeController(ModelController):
             datacenter = self.vmware.get_datacenter(vmware_client, model.region.datacenter)
             datastore = self.vmware.get_datastore(vmware_client, zone.vm_datastore, datacenter)
             if model.task == VolumeTask.ATTACHING:
-                vm = self.vmware.get_vm(vmware_client, str(model.attached_to_id), datacenter)
+                instance = Instance.get(model.project, model.task_kwargs['to'])
+                if instance is None:
+                    # Attaching to instance doesn't exist
+                    model.task = None
+                    return
+                if instance.state in [ResourceState.ToDelete, ResourceState.Deleting, ResourceState.Deleted,
+                                      ResourceState.Error]:
+                    # Attaching to instance is deleting or errored.
+                    model.task = None
+                    return
+                vm = self.vmware.get_vm(vmware_client, str(instance.id), datacenter)
+                if vm is None:
+                    # VM doesn't exist
+                    model.task = None
+                    return
                 self.vmware.attach_disk(vmware_client, model.backing_id, datastore, vm)
+                model.attached_to = instance
                 model.task = None
             elif model.task == VolumeTask.DETACHING:
                 self.detach_disk(vmware_client, datacenter, model)
+                model.attached_to = None
                 model.task = None
             elif model.task == VolumeTask.GROWING:
                 self.vmware.grow_disk(vmware_client, model.backing_id, model.task_kwargs['size'], datastore)

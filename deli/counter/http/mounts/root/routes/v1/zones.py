@@ -87,6 +87,9 @@ class ZoneRouter(Router):
         if zone.state == ResourceState.Deleted:
             raise cherrypy.HTTPError(400, "Zone has already been deleted")
 
+        if zone.schedulable:
+            raise cherrypy.HTTPError(400, 'Zone must not be schedulable.')
+
         zone.delete()
 
     @Route(route='{zone_id}/action/schedule', methods=[RequestMethods.PUT])

@@ -184,12 +184,12 @@ class RunManager(Daemon):
         self.launch_controller(ProjectQuotaController(1, 30))
         self.launch_controller(NetworkController(1, 30, self.vmware))
         self.launch_controller(NetworkPortController(1, 30))
-        self.launch_controller(ImageController(1, 30, self.vmware))
+        self.launch_controller(ImageController(4, 30, self.vmware))
         self.launch_controller(ServiceAccountController(1, 30))
         self.launch_controller(FlavorController(1, 30))
-        self.launch_controller(VolumeController(1, 30, self.vmware))
-        self.launch_controller(InstanceController(1, 30, self.vmware, self.menu_url))
-        self.launch_controller(KeypairController(1, 30))
+        self.launch_controller(VolumeController(4, 30, self.vmware))
+        self.launch_controller(InstanceController(4, 30, self.vmware, self.menu_url))
+        self.launch_controller(KeypairController(4, 30))
 
     def on_stopped_leading(self):
         self.logger.info("Stopped leading... stopping controllers")

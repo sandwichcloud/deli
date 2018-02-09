@@ -20,9 +20,9 @@ class Volume(ProjectResourceModel):
     def __init__(self, raw=None):
         super().__init__(raw)
         if raw is None:
-            self._raw['metadata']['labels'][REGION_LABEL] = None
-            self._raw['metadata']['labels'][ZONE_LABEL] = None
-            self._raw['metadata']['labels'][ATTACHED_TO_LABEL] = None
+            self._raw['metadata']['labels'][REGION_LABEL] = ''
+            self._raw['metadata']['labels'][ZONE_LABEL] = ''
+            self._raw['metadata']['labels'][ATTACHED_TO_LABEL] = ''
             self._raw['spec'] = {
                 'size': 0,
                 'clonedFrom': None,
@@ -35,19 +35,31 @@ class Volume(ProjectResourceModel):
 
     @property
     def region_id(self):
-        return uuid.UUID(self._raw['metadata']['labels'][REGION_LABEL])
+        region_id = self._raw['metadata']['labels'][REGION_LABEL]
+        if region_id == "":
+            return None
+        return uuid.UUID(region_id)
 
     @property
     def region(self):
-        return Region.get(self._raw['metadata']['labels'][REGION_LABEL])
+        region_id = self.region_id
+        if region_id is None:
+            return None
+        return Region.get(region_id)
 
     @property
     def zone_id(self):
-        return uuid.UUID(self._raw['metadata']['labels'][ZONE_LABEL])
+        zone_id = self._raw['metadata']['labels'][ZONE_LABEL]
+        if zone_id == "":
+            return None
+        return uuid.UUID(zone_id)
 
     @property
     def zone(self):
-        return Zone.get(self._raw['metadata']['labels'][ZONE_LABEL])
+        zone_id = self.zone_id
+        if zone_id is None:
+            return None
+        return Zone.get(zone_id)
 
     @zone.setter
     def zone(self, value):
@@ -92,7 +104,7 @@ class Volume(ProjectResourceModel):
     @property
     def attached_to_id(self):
         instance_id = self._raw['metadata']['labels'][ATTACHED_TO_LABEL]
-        if instance_id is None:
+        if instance_id == "":
             return None
         return uuid.UUID(instance_id)
 
@@ -131,3 +143,9 @@ class Volume(ProjectResourceModel):
     @task_kwargs.setter
     def task_kwargs(self, value):
         self._raw['status']['task']['kwargs'] = value
+
+    def attach(self, instance: Instance):
+        self.task = VolumeTask.ATTACHING
+        self.task_kwargs = {
+            'to': str(instance.id)
+        }

@@ -28,9 +28,14 @@ class ManagerApplication(Application):
                 }
             },
             'loggers': {
-                'deli': {
+                '': {
                     'level': logging.getLevelName(log_level),
                     'handlers': ['console']
+                },
+                'deli': {
+                    'level': logging.getLevelName(log_level),
+                    'handlers': ['console'],
+                    'propagate': False
                 },
             }
         }
