@@ -118,7 +118,7 @@ class Volume(ProjectResourceModel):
     @attached_to.setter
     def attached_to(self, value):
         if value is None:
-            self._raw['metadata']['labels'][ATTACHED_TO_LABEL] = None
+            self._raw['metadata']['labels'][ATTACHED_TO_LABEL] = ""
         else:
             self._raw['metadata']['labels'][ATTACHED_TO_LABEL] = str(value.id)
 
