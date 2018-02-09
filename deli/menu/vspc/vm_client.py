@@ -126,7 +126,7 @@ class VMClient(object):
             'project': instance.project_id,
             'roles': {
                 'global': [],
-                'project': [service_account.role_id]
+                'project': service_account.role_ids
             }
         }
 
