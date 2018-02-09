@@ -5,11 +5,13 @@ import json
 import os
 import time
 import uuid
+from threading import RLock
 
 import arrow
 import urllib3
 from clify.daemon import Daemon
 from dotenv import load_dotenv
+from go_defer import with_defer, defer
 from kubernetes import config, client
 from kubernetes.client import Configuration
 
@@ -66,6 +68,7 @@ class RunManager(Daemon):
         self.vmware = None
         self.leader_elector = None
         self.controllers = []
+        self.lock = RLock()
 
     def setup_arguments(self, parser):
         load_dotenv(os.path.join(os.getcwd(), '.env'))
@@ -172,9 +175,12 @@ class RunManager(Daemon):
         self.controllers.append(controller)
         controller.start()
 
+    @with_defer
     def on_started_leading(self):
         if self.leader_elector.shutting_down:
             return
+        self.lock.acquire()
+        defer(self.lock.release)
         self.logger.info("Started leading... starting controllers")
         self.launch_controller(RegionController(1, 30, self.vmware))
         self.launch_controller(ZoneController(1, 30, self.vmware))
@@ -191,8 +197,11 @@ class RunManager(Daemon):
         self.launch_controller(InstanceController(4, 30, self.vmware, self.menu_url))
         self.launch_controller(KeypairController(4, 30))
 
+    @with_defer
     def on_stopped_leading(self):
         self.logger.info("Stopped leading... stopping controllers")
+        self.lock.acquire()
+        defer(self.lock.release)
         for controller in self.controllers:
             controller.stop()
         self.controllers = []

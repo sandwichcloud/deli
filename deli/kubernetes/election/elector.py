@@ -35,13 +35,22 @@ class LeaderElector(threading.Thread):
         self.logger.debug("My identity is: " + self.identity)
         while self.shutting_down is False:
             self.logger.debug("Trying to become a leader")
-            while self.try_acquire_or_renew() is False:
-                if self.shutting_down is True:
-                    return
+            while True:
+                try:
+                    if self.shutting_down is True:
+                        return
+                    is_leader = self.try_acquire_or_renew()
+                    if is_leader:
+                        break
+                except Exception:
+                    self.logger.exception("Error trying to become leader")
                 time.sleep(self.retry_period)
             self.logger.debug("I am now the leader... starting renew")
             threading.Thread(target=self.on_started_leading).start()
-            self.renew()
+            try:
+                self.renew()
+            except Exception:
+                self.logger.exception("Error trying to renew leadership")
             self.logger.debug("I am no longer the leader")
             threading.Thread(target=self.on_stopped_leading).start()
 
