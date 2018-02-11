@@ -37,5 +37,9 @@ class ManagerApplication(Application):
                     'handlers': ['console'],
                     'propagate': False
                 },
+                'k8scontroller': {
+                    'level': logging.getLevelName(log_level),
+                    'handlers': ['console']
+                }
             }
         }

@@ -51,8 +51,7 @@ class ResponseProjectQuota(Model):
     used_disk = IntType(required=True)
 
     @classmethod
-    def from_database(cls, project: Project):
-        quota: ProjectQuota = ProjectQuota.list(project)[0]
+    def from_database(cls, quota: ProjectQuota):
         model = cls()
         model.vcpu = quota.vcpu
         model.ram = quota.ram

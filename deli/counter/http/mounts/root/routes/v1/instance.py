@@ -105,7 +105,7 @@ class InstanceRouter(Router):
             if service_account is None:
                 raise cherrypy.HTTPError(404, 'Could not find a default service account to attach to the instance.')
 
-        quota: ProjectQuota = ProjectQuota.list(project)[0]
+        quota: ProjectQuota = ProjectQuota.get(project, project.id)
         used_vcpu = quota.used_vcpu + flavor.vcpus
         used_ram = quota.used_ram + flavor.ram
         requested_disk = flavor.disk

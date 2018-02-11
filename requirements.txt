@@ -16,3 +16,4 @@ alembic==0.9.5 # MIT
 passlib==1.7.1 # BSD-3-Clause
 bcrypt==3.1.4 # Apache 2.0
 pygithub==1.35 # LGPL
+pyk8s-controller==0.0.7 # MIT

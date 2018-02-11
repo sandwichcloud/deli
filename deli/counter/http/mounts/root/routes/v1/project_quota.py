@@ -19,7 +19,8 @@ class ProjectQuotaRouter(Router):
     @cherrypy.tools.enforce_policy(policy_name="projects:quota:get")
     def get(self):
         project: Project = cherrypy.request.project
-        return ResponseProjectQuota.from_database(project)
+        quota = ProjectQuota.get(project, project.id)
+        return ResponseProjectQuota.from_database(quota)
 
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.project_scope()
@@ -29,7 +30,7 @@ class ProjectQuotaRouter(Router):
         cherrypy.response.status = 204
         request: RequestProjectModifyQuota = cherrypy.request.model
         project: Project = cherrypy.request.project
-        quota: ProjectQuota = ProjectQuota.list(project)[0]
+        quota: ProjectQuota = ProjectQuota.get(project, project.id)
 
         quota.vcpu = request.vcpu
         quota.ram = request.ram

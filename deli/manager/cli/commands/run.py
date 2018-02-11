@@ -12,10 +12,10 @@ import urllib3
 from clify.daemon import Daemon
 from dotenv import load_dotenv
 from go_defer import with_defer, defer
+from k8scontroller.election.elector import LeaderElector
 from kubernetes import config, client
 from kubernetes.client import Configuration
 
-from deli.kubernetes.election.elector import LeaderElector
 from deli.kubernetes.resources.v1alpha1.flavor.controller import FlavorController
 from deli.kubernetes.resources.v1alpha1.flavor.model import Flavor
 from deli.kubernetes.resources.v1alpha1.image.controller import ImageController
@@ -166,7 +166,8 @@ class RunManager(Daemon):
         self.menu_url = args.menu_url
         self.vmware = VMWare(args.vcenter_host, args.vcenter_port, args.vcenter_username, args.vcenter_password)
 
-        self.leader_elector = LeaderElector(self.on_started_leading, self.on_stopped_leading)
+        self.leader_elector = LeaderElector("sandwich-controller", "kube-system", self.on_started_leading,
+                                            self.on_stopped_leading)
         self.leader_elector.start()
 
         return 0

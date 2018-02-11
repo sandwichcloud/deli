@@ -41,7 +41,7 @@ class VolumeRouter(Router):
                                      'Can only create a volume with a zone in the following state: %s'.format(
                                          ResourceState.Created))
 
-        quota: ProjectQuota = ProjectQuota.list(project)[0]
+        quota: ProjectQuota = ProjectQuota.get(project, project.id)
         used_disk = quota.used_disk + request.size
         if quota.disk != -1:
             if used_disk > quota.disk:
@@ -184,7 +184,7 @@ class VolumeRouter(Router):
         if request.size <= volume.size:
             raise cherrypy.HTTPError(400, 'Size must be bigger than the current volume size.')
 
-        quota: ProjectQuota = ProjectQuota.list(project)[0]
+        quota: ProjectQuota = ProjectQuota.get(project, project.id)
         used_disk = quota.used_disk + request.size
         if quota.disk != -1:
             if used_disk > quota.disk:
@@ -206,6 +206,7 @@ class VolumeRouter(Router):
     @cherrypy.tools.enforce_policy(policy_name="volumes:action:grow")
     def action_clone(self, **_):
         request: RequestCloneVolume = cherrypy.request.model
+        project: Project = cherrypy.request.project
         volume: Volume = cherrypy.request.resource_object
         if volume.state != ResourceState.Created:
             raise cherrypy.HTTPError(400, 'Volume is not in the following state: ' + ResourceState.Created.value)
@@ -215,6 +216,15 @@ class VolumeRouter(Router):
             raise cherrypy.HTTPError(409, 'Cannot clone while attached to an instance')
         if Volume.get_by_name(cherrypy.request.project, request.name) is not None:
             raise cherrypy.HTTPError(409, 'A volume with the requested name already exists.')
+
+        quota: ProjectQuota = ProjectQuota.get(project, project.id)
+        used_disk = quota.used_disk + volume.size
+        if quota.disk != -1:
+            if used_disk > quota.disk:
+                raise QuotaError("Disk", volume.size, quota.used_disk, quota.disk)
+
+        quota.used_disk = used_disk
+        quota.save()
 
         new_volume = Volume()
         new_volume.project = volume.project

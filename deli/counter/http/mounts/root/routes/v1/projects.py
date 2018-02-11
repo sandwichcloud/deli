@@ -43,6 +43,8 @@ class ProjectRouter(Router):
         ProjectRole.create_default_roles(project)
         ServiceAccount.create_default_service_account(project)
         quota = ProjectQuota()
+        # Set the quota id to the project id so we know how to get it back
+        quota._raw['metadata']['name'] = str(project.id)
         quota.project = project
         quota.create()
 
