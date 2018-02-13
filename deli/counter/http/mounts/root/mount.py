@@ -3,13 +3,13 @@ import json
 import arrow
 import cherrypy
 from cryptography.fernet import Fernet, MultiFernet, InvalidToken
+from ingredients_http.app import HTTPApplication
+from ingredients_http.app_mount import ApplicationMount
 from kubernetes import config
 from kubernetes.client import Configuration
 from simple_settings import settings
 
 from deli.counter.auth.manager import AuthManager
-from deli.http.app import HTTPApplication
-from deli.http.app_mount import ApplicationMount
 from deli.kubernetes.resources.model import ProjectResourceModel
 from deli.kubernetes.resources.project import Project
 

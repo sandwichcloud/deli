@@ -1,10 +1,10 @@
 import cherrypy
+from ingredients_http.route import Route
 
-from deli.http.route import Route
-from deli.http.router import Router
+from deli.counter.http.router import SandwichRouter
 
 
-class AuthRouter(Router):
+class AuthRouter(SandwichRouter):
     def __init__(self):
         super().__init__()
         self.drivers = {}
@@ -13,7 +13,7 @@ class AuthRouter(Router):
         self.drivers = self.mount.auth_manager.drivers
 
         for _, driver in self.drivers.items():
-            driver_router: Router = driver.auth_router()
+            driver_router: SandwichRouter = driver.auth_router()
             driver_router.setup_routes(dispatcher, uri_prefix)
 
         super().setup_routes(dispatcher, uri_prefix)

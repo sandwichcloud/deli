@@ -1,13 +1,13 @@
 from typing import Optional
 
 import cherrypy
+from ingredients_http.request_methods import RequestMethods
+from ingredients_http.route import Route
 
 from deli.counter.auth.policy import POLICIES
 from deli.counter.http.mounts.root.routes.v1.auth.validation_models.role import RequestCreateRole, ResponseRole, \
     ParamsRole, ParamsListRoles, RequestRoleUpdate
-from deli.http.request_methods import RequestMethods
-from deli.http.route import Route
-from deli.http.router import Router
+from deli.counter.http.router import SandwichRouter
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.role.model import GlobalRole, ProjectRole
 
@@ -84,7 +84,7 @@ class RoleHelper(object):
         role.delete()
 
 
-class AuthGlobalRolesRouter(Router, RoleHelper):
+class AuthGlobalRolesRouter(SandwichRouter, RoleHelper):
     def __init__(self):
         super().__init__('global-roles')
 
@@ -125,7 +125,7 @@ class AuthGlobalRolesRouter(Router, RoleHelper):
         return self.helper_delete()
 
 
-class AuthProjectRolesRouter(Router, RoleHelper):
+class AuthProjectRolesRouter(SandwichRouter, RoleHelper):
     def __init__(self):
         super().__init__('project-roles')
 

@@ -5,7 +5,7 @@ from simple_settings import settings
 from deli.counter.auth.driver import AuthDriver
 from deli.counter.auth.drivers.database.database import Database
 from deli.counter.auth.drivers.database.router import DatabaseAuthRouter
-from deli.http.router import Router
+from deli.counter.http.router import SandwichRouter
 
 
 class DatabaseAuthDriver(AuthDriver):
@@ -20,7 +20,7 @@ class DatabaseAuthDriver(AuthDriver):
     def discover_options(self) -> Dict:
         return {}
 
-    def auth_router(self) -> Router:
+    def auth_router(self) -> SandwichRouter:
         return DatabaseAuthRouter(self)
 
     def health(self):

@@ -1,18 +1,18 @@
 import arrow
 import cherrypy
+from ingredients_http.request_methods import RequestMethods
+from ingredients_http.route import Route
 from kubernetes.client.rest import ApiException
 
 from deli.counter.http.mounts.root.routes.v1.auth.validation_models.tokens import ResponseVerifyToken, \
     RequestScopeToken, ResponseOAuthToken
-from deli.http.request_methods import RequestMethods
-from deli.http.route import Route
-from deli.http.router import Router
+from deli.counter.http.router import SandwichRouter
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.project_member.model import ProjectMember
 from deli.kubernetes.resources.v1alpha1.role.model import GlobalRole, ProjectRole
 
 
-class AuthTokenRouter(Router):
+class AuthTokenRouter(SandwichRouter):
     def __init__(self):
         super().__init__('tokens')
 

@@ -1,12 +1,12 @@
 import uuid
 
 import cherrypy
+from ingredients_http.request_methods import RequestMethods
+from ingredients_http.route import Route
 
 from deli.counter.http.mounts.root.routes.v1.validation_models.images import RequestCreateImage, ResponseImage, \
     ParamsImage, ParamsListImage, ParamsImageMember, RequestAddMember, ResponseImageMember, RequestImageVisibility
-from deli.http.request_methods import RequestMethods
-from deli.http.route import Route
-from deli.http.router import Router
+from deli.counter.http.router import SandwichRouter
 from deli.kubernetes.resources.const import REGION_LABEL, IMAGE_VISIBILITY_LABEL, \
     MEMBER_LABEL
 from deli.kubernetes.resources.model import ResourceState
@@ -15,7 +15,7 @@ from deli.kubernetes.resources.v1alpha1.image.model import Image, ImageVisibilit
 from deli.kubernetes.resources.v1alpha1.region.model import Region
 
 
-class ImageRouter(Router):
+class ImageRouter(SandwichRouter):
     def __init__(self):
         super().__init__(uri_base='images')
 

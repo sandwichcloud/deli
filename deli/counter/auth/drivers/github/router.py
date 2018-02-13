@@ -5,17 +5,17 @@ import github.AuthenticatedUser
 import requests
 import requests.exceptions
 from github.GithubException import TwoFactorException, GithubException, BadCredentialsException
+from ingredients_http.request_methods import RequestMethods
+from ingredients_http.route import Route
 from simple_settings import settings
 from sqlalchemy_utils.types.json import json
 
 from deli.counter.auth.validation_models.github import RequestGithubAuthorization, RequestGithubToken
 from deli.counter.http.mounts.root.routes.v1.auth.validation_models.tokens import ResponseOAuthToken
-from deli.http.request_methods import RequestMethods
-from deli.http.route import Route
-from deli.http.router import Router
+from deli.counter.http.router import SandwichRouter
 
 
-class GithubAuthRouter(Router):
+class GithubAuthRouter(SandwichRouter):
     def __init__(self, driver):
         super().__init__(uri_base='github')
         self.driver = driver

@@ -1,7 +1,6 @@
+from ingredients_http.schematics.types import KubeName, ArrowType
 from schematics import Model
 from schematics.types import ListType, UUIDType, IntType, StringType
-
-from deli.http.schematics.types import KubeName, ArrowType
 
 
 class RequestCreateRole(Model):

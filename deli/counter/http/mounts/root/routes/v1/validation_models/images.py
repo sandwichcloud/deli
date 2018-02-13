@@ -1,7 +1,7 @@
+from ingredients_http.schematics.types import EnumType, KubeName, ArrowType
 from schematics import Model
 from schematics.types import UUIDType, StringType, IntType, BooleanType
 
-from deli.http.schematics.types import KubeName, EnumType, ArrowType
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.v1alpha1.image.model import Image, ImageVisibility
 

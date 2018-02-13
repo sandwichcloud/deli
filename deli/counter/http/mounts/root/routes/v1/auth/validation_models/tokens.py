@@ -1,7 +1,6 @@
+from ingredients_http.schematics.types import ArrowType
 from schematics import Model
 from schematics.types import StringType, ListType, UUIDType
-
-from deli.http.schematics.types import ArrowType
 
 
 class RequestScopeToken(Model):

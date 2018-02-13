@@ -9,8 +9,6 @@ load_dotenv(os.path.join(os.getcwd(), '.env'))
 # CORE             #
 ####################
 
-DEBUG = True if os.environ.get('PRODUCTION') is None else False
-
 LOGGING_LEVEL = logging.getLevelName(logging.INFO)
 LOGGING_CONFIG = {
     'version': 1,

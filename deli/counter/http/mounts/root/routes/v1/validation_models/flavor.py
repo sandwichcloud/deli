@@ -1,7 +1,7 @@
+from ingredients_http.schematics.types import KubeName, ArrowType
 from schematics import Model
 from schematics.types import UUIDType, IntType
 
-from deli.http.schematics.types import KubeName, ArrowType
 from deli.kubernetes.resources.v1alpha1.flavor.model import Flavor
 
 

@@ -1,15 +1,15 @@
 import uuid
 
 import cherrypy
+from ingredients_http.route import Route
 
 from deli.counter.auth.policy import POLICIES
 from deli.counter.http.mounts.root.routes.v1.auth.validation_models.policy import ParamsPolicy, ResponsePolicy, \
     ParamsListPolicy
-from deli.http.route import Route
-from deli.http.router import Router
+from deli.counter.http.router import SandwichRouter
 
 
-class AuthPolicyRouter(Router):
+class AuthPolicyRouter(SandwichRouter):
     def __init__(self):
         super().__init__('policies')
 

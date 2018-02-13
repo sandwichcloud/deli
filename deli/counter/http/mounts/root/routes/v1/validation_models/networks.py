@@ -1,10 +1,10 @@
 import ipaddress
 
+from ingredients_http.schematics.types import KubeName, IPv4NetworkType, IPv4AddressType, EnumType, ArrowType
 from schematics import Model
 from schematics.exceptions import ValidationError
 from schematics.types import UUIDType, IntType, StringType, ListType
 
-from deli.http.schematics.types import IPv4AddressType, IPv4NetworkType, EnumType, ArrowType, KubeName
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.v1alpha1.network.model import Network
 

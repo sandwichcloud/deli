@@ -1,13 +1,13 @@
 import uuid
 
 import cherrypy
+from ingredients_http.request_methods import RequestMethods
+from ingredients_http.route import Route
 from kubernetes.client.rest import ApiException
 
 from deli.counter.http.mounts.root.routes.v1.validation_models.projects import ResponseProject, RequestCreateProject, \
     ParamsProject, ParamsListProject
-from deli.http.request_methods import RequestMethods
-from deli.http.route import Route
-from deli.http.router import Router
+from deli.counter.http.router import SandwichRouter
 from deli.kubernetes.resources.const import MEMBER_LABEL
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.project_quota.model import ProjectQuota
@@ -15,7 +15,7 @@ from deli.kubernetes.resources.v1alpha1.role.model import ProjectRole
 from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
 
 
-class ProjectRouter(Router):
+class ProjectRouter(SandwichRouter):
     def __init__(self):
         super().__init__(uri_base='projects')
 

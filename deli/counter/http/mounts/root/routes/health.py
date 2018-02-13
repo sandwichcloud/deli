@@ -1,11 +1,11 @@
 import cherrypy
+from ingredients_http.route import Route
 from kubernetes import client
 
-from deli.http.route import Route
-from deli.http.router import Router
+from deli.counter.http.router import SandwichRouter
 
 
-class HealthRouter(Router):
+class HealthRouter(SandwichRouter):
     def __init__(self):
         super().__init__(uri_base='health')
 

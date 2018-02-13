@@ -1,17 +1,17 @@
 import arrow
 import cherrypy
+from ingredients_http.request_methods import RequestMethods
+from ingredients_http.route import Route
 
 from deli.counter.auth.drivers.database.models.user import User, UserRole
 from deli.counter.auth.validation_models.database import RequestDatabaseLogin, RequestDatabaseCreateUser, \
     ResponseDatabaseUser, ParamsDatabaseUser, ParamsListDatabaseUser, RequestDatabaseChangePassword, \
     RequestDatabaseUserRole
 from deli.counter.http.mounts.root.routes.v1.auth.validation_models.tokens import ResponseOAuthToken
-from deli.http.request_methods import RequestMethods
-from deli.http.route import Route
-from deli.http.router import Router
+from deli.counter.http.router import SandwichRouter
 
 
-class DatabaseAuthRouter(Router):
+class DatabaseAuthRouter(SandwichRouter):
 
     def __init__(self, driver):
         super().__init__(uri_base='database')

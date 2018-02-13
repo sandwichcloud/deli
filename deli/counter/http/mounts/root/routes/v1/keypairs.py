@@ -1,17 +1,17 @@
 import uuid
 
 import cherrypy
+from ingredients_http.request_methods import RequestMethods
+from ingredients_http.route import Route
 
 from deli.counter.http.mounts.root.routes.v1.validation_models.keypairs import RequestCreateKeypair, ResponseKeypair, \
     ParamsKeypair, ParamsListKeypair
-from deli.http.request_methods import RequestMethods
-from deli.http.route import Route
-from deli.http.router import Router
+from deli.counter.http.router import SandwichRouter
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
 
 
-class KeypairsRouter(Router):
+class KeypairsRouter(SandwichRouter):
     def __init__(self):
         super().__init__(uri_base='keypairs')
 

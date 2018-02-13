@@ -1,13 +1,13 @@
 import uuid
 
 import cherrypy
+from ingredients_http.request_methods import RequestMethods
+from ingredients_http.route import Route
 
 from deli.counter.http.mounts.root.routes.v1.errors.quota import QuotaError
 from deli.counter.http.mounts.root.routes.v1.validation_models.volume import RequestCreateVolume, ResponseVolume, \
     ParamsVolume, ParamsListVolume, RequestCloneVolume, RequestAttachVolume, RequestGrowVolume
-from deli.http.request_methods import RequestMethods
-from deli.http.route import Route
-from deli.http.router import Router
+from deli.counter.http.router import SandwichRouter
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.instance.model import Instance
@@ -16,7 +16,7 @@ from deli.kubernetes.resources.v1alpha1.volume.model import Volume, VolumeTask
 from deli.kubernetes.resources.v1alpha1.zone.model import Zone
 
 
-class VolumeRouter(Router):
+class VolumeRouter(SandwichRouter):
     def __init__(self):
         super().__init__(uri_base='volumes')
 

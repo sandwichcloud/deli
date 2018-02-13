@@ -1,18 +1,18 @@
 import uuid
 
 import cherrypy
+from ingredients_http.request_methods import RequestMethods
+from ingredients_http.route import Route
 
 from deli.counter.http.mounts.root.routes.v1.validation_models.projects import ResponseProjectMember, \
     RequestProjectAddMember, ParamsProjectMember, ParamsListProjectMember, RequestProjectUpdateMember
-from deli.http.request_methods import RequestMethods
-from deli.http.route import Route
-from deli.http.router import Router
+from deli.counter.http.router import SandwichRouter
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.project_member.model import ProjectMember
 from deli.kubernetes.resources.v1alpha1.role.model import ProjectRole
 
 
-class ProjectMemberRouter(Router):
+class ProjectMemberRouter(SandwichRouter):
     def __init__(self):
         super().__init__(uri_base='project-members')
 

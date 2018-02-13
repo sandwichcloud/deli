@@ -1,8 +1,8 @@
+from ingredients_http.schematics.types import ArrowType
 from schematics import Model
 from schematics.types import StringType, ListType, IntType
 
 from deli.counter.auth.drivers.database.models.user import User
-from deli.http.schematics.types import ArrowType
 
 
 class ParamsDatabaseUser(Model):

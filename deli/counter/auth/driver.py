@@ -6,7 +6,7 @@ from typing import Dict
 from cryptography.fernet import Fernet
 from simple_settings import settings
 
-from deli.http.router import Router
+from deli.counter.http.router import SandwichRouter
 from deli.kubernetes.resources.v1alpha1.role.model import GlobalRole
 
 
@@ -22,7 +22,7 @@ class AuthDriver(object):
         raise NotImplementedError
 
     @abstractmethod
-    def auth_router(self) -> Router:
+    def auth_router(self) -> SandwichRouter:
         raise NotImplementedError
 
     @abstractmethod

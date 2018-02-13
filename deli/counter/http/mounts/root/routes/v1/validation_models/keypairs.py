@@ -1,11 +1,11 @@
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import load_ssh_public_key
+from ingredients_http.schematics.types import ArrowType
 from schematics import Model
 from schematics.exceptions import ValidationError
 from schematics.types import UUIDType, IntType, StringType
 
-from deli.http.schematics.types import ArrowType
 from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
 
 

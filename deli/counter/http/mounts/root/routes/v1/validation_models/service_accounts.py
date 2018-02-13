@@ -1,7 +1,7 @@
+from ingredients_http.schematics.types import KubeName, ArrowType
 from schematics import Model
 from schematics.types import UUIDType, ListType, StringType, IntType
 
-from deli.http.schematics.types import KubeName, ArrowType
 from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
 
 

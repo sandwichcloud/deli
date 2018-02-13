@@ -1,7 +1,7 @@
+from ingredients_http.schematics.types import KubeName, ArrowType
 from schematics import Model
 from schematics.types import UUIDType, IntType, BooleanType, ListType, StringType
 
-from deli.http.schematics.types import ArrowType, KubeName
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.project_member.model import ProjectMember
 from deli.kubernetes.resources.v1alpha1.project_quota.model import ProjectQuota

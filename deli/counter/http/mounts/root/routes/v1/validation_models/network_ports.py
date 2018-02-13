@@ -1,7 +1,7 @@
+from ingredients_http.schematics.types import IPv4AddressType, EnumType, ArrowType
 from schematics import Model
 from schematics.types import UUIDType, IntType
 
-from deli.http.schematics.types import IPv4AddressType, ArrowType, EnumType
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.v1alpha1.network.model import NetworkPort
 
