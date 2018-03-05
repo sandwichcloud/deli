@@ -176,7 +176,7 @@ class VMClient(object):
                 keypair = Keypair()
                 keypair.public_key = public_key
                 keypairs.append(keypair)
-                
+
             instance.keypairs = keypairs
             instance.network_port = network_port
             instance.user_data = instance_model.user_data
