@@ -3,13 +3,22 @@ import enum
 import json
 import logging
 import os
+import os.path
+import uuid
 
 import arrow
 import yaml
 from cryptography.fernet import Fernet
 
 from deli.kubernetes.resources.const import ID_LABEL
+from deli.kubernetes.resources.v1alpha1.image.model import Image
 from deli.kubernetes.resources.v1alpha1.instance.model import Instance
+from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
+from deli.kubernetes.resources.v1alpha1.network.model import NetworkPort, Network
+from deli.kubernetes.resources.v1alpha1.region.model import Region
+from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
+from deli.kubernetes.resources.v1alpha1.zone.model import Zone
+from deli.menu.models.out_of_band import OutOfBandInstance
 from deli.menu.vspc.async_telnet import CR
 
 
@@ -33,15 +42,155 @@ class VMClient(object):
         self.vm_name = vm_name
         self.writer = writer
 
+        self.fernet = Fernet(os.environ['FERNET_KEY'])
+        self.out_of_band = os.environ.get('OUT_OF_BAND')
+
     def get_instance(self):
-        instances = Instance.list_all(label_selector=ID_LABEL + "=" + self.vm_name)
-        if len(instances) == 0:
-            self.logger.warning("Could not find any instances with the id of '%s'" % self.vm_name)
-            return None
-        if len(instances) > 1:
-            self.logger.warning("Found multiple instances with the id of '%s'" % self.vm_name)
-            return None
-        return instances[0]
+        if self.out_of_band is not None:
+
+            instance_file = None
+            if os.path.isfile(os.path.join(self.out_of_band, self.vm_name + ".yaml")):
+                instance_file = os.path.join(self.out_of_band, self.vm_name + ".yaml")
+            elif os.path.isfile(os.path.join(self.out_of_band, self.vm_name + ".yml")):
+                instance_file = os.path.join(self.out_of_band, self.vm_name + ".yml")
+
+            if instance_file is None:
+                self.logger.error("Could not find metadata file for instance " + self.vm_name)
+                return None
+
+            with open(instance_file) as f:
+                instance_yaml = yaml.load(f)
+                try:
+                    instance_model = OutOfBandInstance(instance_yaml)
+                    instance_model.validate()
+                except Exception:
+                    self.logger.exception("Error loading metadata for instance " + self.vm_name)
+                    return None
+
+            # Override instance properties
+            @property
+            def image_id(self):
+                return self._image.id
+
+            @property
+            def project_id(self):
+                return uuid.uuid4()
+
+            @property
+            def image(self):
+                return self._image
+
+            @image.setter
+            def image(self, value):
+                self._image = value
+
+            @property
+            def region(self):
+                return self._region
+
+            @region.setter
+            def region(self, value):
+                self._region = value
+
+            @property
+            def zone(self):
+                return self._zone
+
+            @zone.setter
+            def zone(self, value):
+                self._zone = value
+
+            @property
+            def keypairs(self):
+                return self._keypairs
+
+            @keypairs.setter
+            def keypairs(self, value):
+                self._keypairs = value
+
+            @property
+            def network_port(self):
+                return self._network_port
+
+            @network_port.setter
+            def network_port(self, value):
+                self._network_port = value
+
+            @property
+            def service_account(self):
+                return self._service_account
+
+            @service_account.setter
+            def service_account(self, value):
+                self._service_account = value
+
+            Instance.image_id = image_id
+            Instance.project_id = project_id
+            Instance.image = image
+            Instance.region = region
+            Instance.zone = zone
+            Instance.keypairs = keypairs
+            Instance.network_port = network_port
+            Instance.service_account = service_account
+
+            # Override network port properties
+            @property
+            def network(self):
+                return self._network
+
+            @network.setter
+            def network(self, value):
+                self._network = value
+
+            NetworkPort.network = network
+
+            network = Network()
+            network.cidr = instance_model.network.cidr
+            network.gateway = instance_model.network.gateway
+            network.dns_servers = instance_model.network.dns_servers
+
+            network_port = NetworkPort()
+            network_port.ip_address = instance_model.network.ip_address
+            network_port.network = network
+
+            region = Region()
+            region.name = instance_model.region_name
+
+            zone = Zone()
+            zone.name = instance_model.zone_name
+
+            service_account = ServiceAccount()
+            service_account.name = "None"
+
+            instance = Instance()
+            instance.image = Image()
+            instance.region = region
+            instance.zone = zone
+            instance.service_account = service_account
+
+            for k, v in instance_model.tags.items():
+                instance.add_tag(k, v)
+
+            keypairs = []
+            for public_key in instance_model.keypairs:
+                keypair = Keypair()
+                keypair.public_key = public_key
+                keypairs.append(keypair)
+                
+            instance.keypairs = keypairs
+            instance.network_port = network_port
+            instance.user_data = instance_model.user_data
+
+            return instance
+        else:
+            instances = Instance.list_all(label_selector=ID_LABEL + "=" + self.vm_name)
+            if len(instances) == 0:
+                self.logger.warning("Could not find any instances with the id of '%s'" % self.vm_name)
+                return None
+            if len(instances) > 1:
+                self.logger.warning("Found multiple instances with the id of '%s'" % self.vm_name)
+                return None
+            return instances[0]
 
     async def write_metadata(self):
 
@@ -114,8 +263,6 @@ class VMClient(object):
 
         service_account = instance.service_account
 
-        fernet = Fernet(os.environ['FERNET_KEY'])
-
         token_data = {
             # Token only lasts 30 minutes. This should be more than enough
             'expires_at': arrow.now().shift(minutes=+30),
@@ -130,7 +277,8 @@ class VMClient(object):
             }
         }
 
-        await self.write(PacketCode.RESPONSE_SECURITYDATA, fernet.encrypt(json.dumps(token_data).encode()).decode())
+        await self.write(PacketCode.RESPONSE_SECURITYDATA,
+                         self.fernet.encrypt(json.dumps(token_data).encode()).decode())
 
     async def write(self, packet_code, data):
         b64data = base64.b64encode(data.encode()).decode('ascii')

@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+# This file has been taken and modified from
+# https://github.com/openstack/vmware-vspc/blob/a4c2934d509cea638208e31658a3eb8f2fdc7f08/vspc/server.py
+# It is therefore using a different license on copyright as shown bellow
+
 # Copyright (c) 2017 VMware Inc.
 # All Rights Reserved.
 #
