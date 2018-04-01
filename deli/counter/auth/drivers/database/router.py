@@ -49,10 +49,10 @@ class DatabaseAuthRouter(SandwichRouter):
             user.password = request.password
 
             session.add(user)
-            session.commit(user)
+            session.commit()
             session.refresh(user)
 
-        return ResponseDatabaseUser.from_database(user)
+            return ResponseDatabaseUser.from_database(user)
 
     @Route(route='users/{user_id}')
     @cherrypy.tools.model_params(cls=ParamsDatabaseUser)

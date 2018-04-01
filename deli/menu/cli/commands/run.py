@@ -53,7 +53,7 @@ class RunMetadata(Daemon):
 
     def run(self, args) -> int:
 
-        if args.out_of_band is not None:
+        if hasattr(args, "out_of_band"):
             self.logger.info("Using out of band configuration for metadata")
             if os.path.isdir(args.out_of_band) is False:
                 self.logger.error("Could not find directory for out of band configuration " + args.out_of_band)

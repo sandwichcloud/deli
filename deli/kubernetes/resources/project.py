@@ -5,7 +5,7 @@ from kubernetes import client
 from kubernetes.client import V1DeleteOptions, V1Namespace
 from kubernetes.client.rest import ApiException
 
-from deli.kubernetes.resources.const import NAME_LABEL, MEMBER_LABEL
+from deli.kubernetes.resources.const import NAME_LABEL, MEMBER_LABEL, PROJECT_LABEL
 
 
 class Project(object):
@@ -19,7 +19,7 @@ class Project(object):
                     "name": str(uuid.uuid4()),
                     "labels": {
                         NAME_LABEL: None,
-                        "sandwichcloud.com/project": "true"
+                        PROJECT_LABEL: "true"
                     }
                 }
             }
@@ -53,7 +53,7 @@ class Project(object):
                 return None
             if resp['metadata']['labels'] is None:
                 return None
-            if 'sandwichcloud.com/project' not in resp['metadata']['labels']:
+            if PROJECT_LABEL not in resp['metadata']['labels']:
                 return None
         except ApiException as e:
             if e.status == 404 and safe:
@@ -73,11 +73,11 @@ class Project(object):
         if 'label_selector' in kwargs:
             label_selector = kwargs['label_selector']
             if len(label_selector) > 0:
-                kwargs['label_selector'] += ",sandwichcloud.com/project"
+                kwargs['label_selector'] += "," + PROJECT_LABEL
             else:
-                kwargs['label_selector'] += "sandwichcloud.com/project"
+                kwargs['label_selector'] += PROJECT_LABEL
         else:
-            kwargs['label_selector'] = "sandwichcloud.com/project"
+            kwargs['label_selector'] = PROJECT_LABEL
         core_api = client.CoreV1Api()
         raw_list = core_api.list_namespace(**kwargs)
         items = []

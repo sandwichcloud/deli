@@ -18,7 +18,6 @@ class RootMount(ApplicationMount):
     def __init__(self, app: HTTPApplication):
         super().__init__(app=app, mount_point='/')
         self.auth_manager: AuthManager = None
-        self.messaging = None
 
     def validate_token(self):
         authorization_header = cherrypy.request.headers.get('Authorization', None)
