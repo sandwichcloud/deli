@@ -19,7 +19,7 @@ from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
 from deli.kubernetes.resources.v1alpha1.network.model import NetworkPort, Network
 from deli.kubernetes.resources.v1alpha1.project_quota.model import ProjectQuota
 from deli.kubernetes.resources.v1alpha1.region.model import Region
-from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
+from deli.kubernetes.resources.v1alpha1.service_account.model import ProjectServiceAccount
 from deli.kubernetes.resources.v1alpha1.volume.model import Volume
 from deli.kubernetes.resources.v1alpha1.zone.model import Zone
 
@@ -96,14 +96,14 @@ class InstanceRouter(SandwichRouter):
             keypairs.append(keypair)
 
         if request.service_account_id is not None:
-            service_account = ServiceAccount.get(project, request.service_account_id)
+            service_account = ProjectServiceAccount.get(project, request.service_account_id)
             if service_account is None:
                 raise cherrypy.HTTPError(404, 'A service account with the requested id of %s does not exist.'.format(
                     request.service_account_id))
         else:
-            service_account = ServiceAccount.get_by_name(project, 'default')
+            service_account = ProjectServiceAccount.get_by_name(project, 'default')
             if service_account is None:
-                raise cherrypy.HTTPError(404, 'Could not find a default service account to attach to the instance.')
+                raise cherrypy.HTTPError(500, 'Could not find a default service account to attach to the instance.')
 
         quota: ProjectQuota = ProjectQuota.get(project, project.id)
         used_vcpu = quota.used_vcpu + flavor.vcpus

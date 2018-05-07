@@ -1,9 +1,9 @@
-import arrow
 import cherrypy
 from ingredients_http.request_methods import RequestMethods
 from ingredients_http.route import Route
 
 from deli.counter.auth.drivers.database.models.user import User, UserRole
+from deli.counter.auth.token import Token
 from deli.counter.auth.validation_models.database import RequestDatabaseLogin, RequestDatabaseCreateUser, \
     ResponseDatabaseUser, ParamsDatabaseUser, ParamsListDatabaseUser, RequestDatabaseChangePassword, \
     RequestDatabaseUserRole
@@ -28,13 +28,14 @@ class DatabaseAuthRouter(SandwichRouter):
             if user is None or user.password != request.password:
                 raise cherrypy.HTTPError(403, "Invalid username or password")
 
-            expiry = arrow.now().shift(days=+1)
-            token = self.driver.generate_user_token(expiry, user.username, [role.role for role in user.roles])
-            session.commit()
+            token = Token()
+            token.driver_name = self.driver.name
+            token.username = user.username
+            token.set_global_roles([role.role for role in user.roles])
 
             response = ResponseOAuthToken()
-            response.access_token = token
-            response.expiry = expiry
+            response.access_token = token.marshal(self.mount.fernet)
+            response.expiry = token.expires_at
             return response
 
     @Route(route='users', methods=[RequestMethods.POST])

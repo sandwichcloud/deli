@@ -1,22 +1,61 @@
 import uuid
 
-from deli.kubernetes.resources.model import ProjectResourceModel
+from deli.kubernetes.resources.model import ProjectResourceModel, GlobalResourceModel
 from deli.kubernetes.resources.project import Project
-from deli.kubernetes.resources.v1alpha1.role.model import ProjectRole
+from deli.kubernetes.resources.v1alpha1.role.model import ProjectRole, GlobalRole
 
 
-class ServiceAccount(ProjectResourceModel):
+class GlobalServiceAccount(GlobalResourceModel):
 
     def __init__(self, raw=None):
         super().__init__(raw)
         if raw is None:
             self._raw['spec'] = {
-                'roles': []
+                'roles': [],
+                'keys': []
             }
 
-    @classmethod
-    def kind(cls):
-        return "SandwichServiceAccount"
+    @property
+    def role_ids(self):
+        roles_ids = []
+        for role_id in self._raw['spec']['roles']:
+            roles_ids.append(uuid.UUID(role_id))
+        return roles_ids
+
+    @property
+    def roles(self):
+        roles = []
+        for role_id in self._raw['spec']['roles']:
+            role = GlobalRole.get(role_id)
+            if role is not None:
+                roles.append(role)
+        return roles
+
+    @roles.setter
+    def roles(self, value):
+        role_ids = []
+        for role in value:
+            role_ids.append(str(role.id))
+        self._raw['spec']['roles'] = role_ids
+
+    @property
+    def keys(self):
+        return self._raw['spec']['keys']
+
+    @keys.setter
+    def keys(self, value):
+        self._raw['spec']['keys'] = value
+
+
+class ProjectServiceAccount(ProjectResourceModel):
+
+    def __init__(self, raw=None):
+        super().__init__(raw)
+        if raw is None:
+            self._raw['spec'] = {
+                'roles': [],
+                'keys': []
+            }
 
     @property
     def role_ids(self):
@@ -40,6 +79,14 @@ class ServiceAccount(ProjectResourceModel):
         for role in value:
             role_ids.append(str(role.id))
         self._raw['spec']['roles'] = role_ids
+
+    @property
+    def keys(self):
+        return self._raw['spec']['keys']
+
+    @keys.setter
+    def keys(self, value):
+        self._raw['spec']['keys'] = value
 
     @classmethod
     def create_default_service_account(cls, project: Project):

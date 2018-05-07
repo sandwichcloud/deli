@@ -9,7 +9,7 @@ from deli.kubernetes.resources.v1alpha1.image.model import Image
 from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
 from deli.kubernetes.resources.v1alpha1.network.model import NetworkPort
 from deli.kubernetes.resources.v1alpha1.region.model import Region
-from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
+from deli.kubernetes.resources.v1alpha1.service_account.model import ProjectServiceAccount
 from deli.kubernetes.resources.v1alpha1.zone.model import Zone
 
 
@@ -149,7 +149,7 @@ class Instance(ProjectResourceModel):
         service_account_id = self.service_account_id
         if service_account_id is None:
             return None
-        return ServiceAccount.get(self.project, service_account_id)
+        return ProjectServiceAccount.get(self.project, service_account_id)
 
     @service_account.setter
     def service_account(self, value):

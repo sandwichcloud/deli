@@ -1,7 +1,7 @@
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import load_ssh_public_key
-from ingredients_http.schematics.types import ArrowType
+from ingredients_http.schematics.types import ArrowType, KubeName
 from schematics import Model
 from schematics.exceptions import ValidationError
 from schematics.types import UUIDType, IntType, StringType
@@ -19,7 +19,7 @@ class ParamsListKeypair(Model):
 
 
 class RequestCreateKeypair(Model):
-    name = StringType(required=True, min_length=3)
+    name = KubeName(required=True, min_length=3)
     public_key = StringType(required=True)
 
     def validate_public_key(self, data, value):
@@ -35,7 +35,7 @@ class RequestCreateKeypair(Model):
 
 class ResponseKeypair(Model):
     id = UUIDType(required=True)
-    name = StringType(required=True, min_length=3)
+    name = KubeName(required=True, min_length=3)
     public_key = StringType(required=True)
     created_at = ArrowType(required=True)
 

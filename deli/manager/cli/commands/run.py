@@ -34,8 +34,9 @@ from deli.kubernetes.resources.v1alpha1.region.controller import RegionControlle
 from deli.kubernetes.resources.v1alpha1.region.model import Region
 from deli.kubernetes.resources.v1alpha1.role.controller import GlobalRoleController, ProjectRoleController
 from deli.kubernetes.resources.v1alpha1.role.model import GlobalRole, ProjectRole
-from deli.kubernetes.resources.v1alpha1.service_account.controller import ServiceAccountController
-from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
+from deli.kubernetes.resources.v1alpha1.service_account.controller import GlobalServiceAccountController, \
+    ProjectServiceAccountController
+from deli.kubernetes.resources.v1alpha1.service_account.model import GlobalServiceAccount, ProjectServiceAccount
 from deli.kubernetes.resources.v1alpha1.volume.controller import VolumeController
 from deli.kubernetes.resources.v1alpha1.volume.model import Volume
 from deli.kubernetes.resources.v1alpha1.zone.controller import ZoneController
@@ -151,8 +152,10 @@ class RunManager(Daemon):
         NetworkPort.wait_for_crd()
         Image.create_crd()
         Image.wait_for_crd()
-        ServiceAccount.create_crd()
-        ServiceAccount.wait_for_crd()
+        GlobalServiceAccount.create_crd()
+        GlobalServiceAccount.wait_for_crd()
+        ProjectServiceAccount.create_crd()
+        ProjectServiceAccount.wait_for_crd()
         Flavor.create_crd()
         Flavor.wait_for_crd()
         Volume.create_crd()
@@ -192,7 +195,8 @@ class RunManager(Daemon):
         self.launch_controller(NetworkController(1, 30, self.vmware))
         self.launch_controller(NetworkPortController(1, 30))
         self.launch_controller(ImageController(4, 30, self.vmware))
-        self.launch_controller(ServiceAccountController(1, 30))
+        self.launch_controller(GlobalServiceAccountController(1, 30))
+        self.launch_controller(ProjectServiceAccountController(1, 30))
         self.launch_controller(FlavorController(1, 30))
         self.launch_controller(VolumeController(4, 30, self.vmware))
         self.launch_controller(InstanceController(4, 30, self.vmware, self.menu_url))

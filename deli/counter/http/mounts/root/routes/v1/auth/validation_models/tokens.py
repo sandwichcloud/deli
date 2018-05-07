@@ -19,4 +19,4 @@ class ResponseVerifyToken(Model):
 
 class ResponseOAuthToken(Model):
     access_token = StringType(required=True)
-    expiry = ArrowType(required=True)
+    expiry = ArrowType()

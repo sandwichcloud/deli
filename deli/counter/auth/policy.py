@@ -461,16 +461,45 @@ POLICIES = [
 
     # Service Accounts
     {
-        "name": "service_accounts:create",
-        "description": "Ability to create a service account",
+        "name": "service_accounts:global:create",
+        "description": "Ability to create a global service account"
+    },
+    {
+        "name": "service_accounts:global:get",
+        "description": "Ability to get a global service account"
+    },
+    {
+        "name": "service_accounts:global:list",
+        "description": "Ability to list global service accounts"
+    },
+    {
+        "name": "service_accounts:global:update",
+        "description": "Ability to update a global service account"
+    },
+
+    {
+        "name": "service_accounts:global:delete",
+        "description": "Ability to delete a global service account"
+    },
+    {
+        "name": "service_accounts:global:key:create",
+        "description": "Ability to create keys for global service accounts"
+    },
+    {
+        "name": "service_accounts:global:key:delete",
+        "description": "Ability to delete keys from global service accounts"
+    },
+    {
+        "name": "service_accounts:project:create",
+        "description": "Ability to create a project service account",
         "tags": [
             "project",
             "default_project_member"
         ]
     },
     {
-        "name": "service_accounts:get",
-        "description": "Ability to get a service account",
+        "name": "service_accounts:project:get",
+        "description": "Ability to get a project service account",
         "tags": [
             "project",
             "default_project_member",
@@ -478,8 +507,8 @@ POLICIES = [
         ]
     },
     {
-        "name": "service_accounts:list",
-        "description": "Ability to list service accounts",
+        "name": "service_accounts:project:list",
+        "description": "Ability to list project service accounts",
         "tags": [
             "project",
             "default_project_member",
@@ -487,8 +516,8 @@ POLICIES = [
         ]
     },
     {
-        "name": "service_accounts:update",
-        "description": "Ability to update a service account",
+        "name": "service_accounts:project:update",
+        "description": "Ability to update a project service account",
         "tags": [
             "project",
             "default_project_member"
@@ -496,8 +525,24 @@ POLICIES = [
     },
 
     {
-        "name": "service_accounts:delete",
-        "description": "Ability to delete a service account",
+        "name": "service_accounts:project:delete",
+        "description": "Ability to delete a project service account",
+        "tags": [
+            "project",
+            "default_project_member"
+        ]
+    },
+    {
+        "name": "service_accounts:project:key:create",
+        "description": "Ability to create keys for project service accounts",
+        "tags": [
+            "project",
+            "default_project_member"
+        ]
+    },
+    {
+        "name": "service_accounts:project:key:delete",
+        "description": "Ability to delete keys from project service accounts",
         "tags": [
             "project",
             "default_project_member"

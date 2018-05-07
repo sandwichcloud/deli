@@ -19,38 +19,40 @@ class AuthTokenRouter(SandwichRouter):
     @Route()
     @cherrypy.tools.model_out(cls=ResponseVerifyToken)
     def get(self):
+        token = cherrypy.request.token
+        project = token.project()
+
+        response = ResponseVerifyToken()
+        response.driver = token.driver_name
+
         global_role_names = []
-        for role_name in cherrypy.request.token['roles']['global']:
+        for role_id in token.global_role_ids:
             try:
-                role: GlobalRole = GlobalRole.get(role_name)
+                role: GlobalRole = GlobalRole.get(role_id)
                 global_role_names.append(role.name)
             except ApiException as e:
                 if e.status != 404:
                     raise
+        response.global_roles = global_role_names
 
-        response = ResponseVerifyToken()
-
-        if cherrypy.request.service_account is not None:
-            response.service_account_id = cherrypy.request.service_account['id']
-            response.service_account_name = cherrypy.request.service_account['name']
+        if token.service_account_id is not None:
+            response.service_account_id = token.service_account_id
         else:
-            response.username = cherrypy.request.user['name']
-            response.driver = cherrypy.request.user['driver']
+            response.username = token.username
 
-        if cherrypy.request.project is not None:
+        if project is not None:
+            response.project_id = project.id
             project_role_names = []
 
-            for role_name in cherrypy.request.token['roles']['project']:
+            for role_id in token.project_role_ids:
                 try:
-                    role: ProjectRole = ProjectRole.get(cherrypy.request.project, role_name)
+                    role: ProjectRole = ProjectRole.get(project, role_id)
                     project_role_names.append(role.name)
                 except ApiException as e:
                     if e.status != 404:
                         raise
-
-            response.project_id = cherrypy.request.project.id
             response.project_roles = project_role_names
-        response.global_roles = global_role_names
+
         return response
 
     @Route(methods=[RequestMethods.HEAD])
@@ -65,11 +67,12 @@ class AuthTokenRouter(SandwichRouter):
     @cherrypy.tools.model_out(cls=ResponseOAuthToken)
     @cherrypy.tools.enforce_policy(policy_name="projects:scope")
     def scope_token(self):
+        token = cherrypy.request.token
 
-        if cherrypy.request.service_account is not None:
+        if token.service_account_id is not None:
             raise cherrypy.HTTPError(403, "Service Accounts cannot scope tokens.")
 
-        if cherrypy.request.project is not None:
+        if token.project() is not None:
             raise cherrypy.HTTPError(403, "Cannot scope an already scoped token.")
 
         request: RequestScopeToken = cherrypy.request.model
@@ -78,37 +81,22 @@ class AuthTokenRouter(SandwichRouter):
         if project is None:
             raise cherrypy.HTTPError(404, 'A project with the requested id does not exist.')
 
-        driver = self.mount.auth_manager.drivers.get(cherrypy.request.user['driver'])
-        if driver is None:
-            raise cherrypy.HTTPError(500, "Previous auth driver '%s' is not loaded. Cannot scope token."
-                                     % cherrypy.request.user['driver'])
-
-        global_role_names = []
-        global_role_ids = cherrypy.request.token['roles']['global']
-        for role_id in global_role_ids:
-            role = GlobalRole.get(role_id)
-            if role is not None:
-                global_role_names.append(role.name)
-
         project_role_ids = []
-
-        user = cherrypy.request.user
-        if project.is_member(user['name'], user['driver']):
-            member_id = project.get_member_id(user['name'], user['driver'])
+        if project.is_member(token.username, token.driver_name):
+            member_id = project.get_member_id(token.username, token.driver_name)
             project_member: ProjectMember = ProjectMember.get(project, member_id)
             project_role_ids.extend(project_member.roles)
         else:
             try:
-                self.mount.enforce_policy("projects:scope:all")
+                token.enforce_policy("projects:scope:all")
             except cherrypy.HTTPError:
                 raise cherrypy.HTTPError(400, "Only project members can scope to this project")
 
-        expiry = arrow.now().shift(days=+1)
-        token = driver.generate_user_token(expiry, cherrypy.request.user['name'],
-                                           global_role_names, project=project,
-                                           project_role_ids=project_role_ids)
+        token.expires_at = arrow.now().shift(days=+1)
+        token.project_id = project.id
+        token.project_role_ids = project_role_ids
 
         response = ResponseOAuthToken()
-        response.access_token = token
-        response.expiry = expiry
+        response.access_token = token.marshal(self.mount.fernet)
+        response.expiry = token.expires_at
         return response

@@ -5,6 +5,7 @@ from ingredients_http.request_methods import RequestMethods
 from ingredients_http.route import Route
 from kubernetes.client.rest import ApiException
 
+from deli.counter.auth.token import Token
 from deli.counter.http.mounts.root.routes.v1.validation_models.projects import ResponseProject, RequestCreateProject, \
     ParamsProject, ParamsListProject
 from deli.counter.http.router import SandwichRouter
@@ -12,7 +13,7 @@ from deli.kubernetes.resources.const import MEMBER_LABEL
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.project_quota.model import ProjectQuota
 from deli.kubernetes.resources.v1alpha1.role.model import ProjectRole
-from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
+from deli.kubernetes.resources.v1alpha1.service_account.model import ProjectServiceAccount
 
 
 class ProjectRouter(SandwichRouter):
@@ -41,7 +42,7 @@ class ProjectRouter(SandwichRouter):
             raise
 
         ProjectRole.create_default_roles(project)
-        ServiceAccount.create_default_service_account(project)
+        ProjectServiceAccount.create_default_service_account(project)
         quota = ProjectQuota()
         # Set the quota id to the project id so we know how to get it back
         quota._raw['metadata']['name'] = str(project.id)
@@ -56,9 +57,10 @@ class ProjectRouter(SandwichRouter):
     @cherrypy.tools.resource_object(id_param="project_id", cls=Project)
     @cherrypy.tools.enforce_policy(policy_name="projects:get")
     def get(self, **_):
+        token: Token = cherrypy.request.token
         project: Project = cherrypy.request.resource_object
 
-        if project.is_member(cherrypy.request.user['name'], cherrypy.request.user['driver']) is False:
+        if project.is_member(token.username, token.driver_name) is False:
             self.mount.enforce_policy("projects:get:all")
 
         return ResponseProject.from_database(cherrypy.request.resource_object)
@@ -68,13 +70,13 @@ class ProjectRouter(SandwichRouter):
     @cherrypy.tools.model_out_pagination(cls=ResponseProject)
     @cherrypy.tools.enforce_policy(policy_name="projects:list")
     def list(self, all: bool, limit: int, marker: uuid.UUID):
+        token: Token = cherrypy.request.token
         kwargs = {
             "label_selector": []
         }
 
         if all is False:
-            kwargs['label_selector'].append(
-                cherrypy.request.user['driver'] + "." + MEMBER_LABEL + "/" + cherrypy.request.user['name'])
+            kwargs['label_selector'].append(token.driver_name + "." + MEMBER_LABEL + "/" + token.username)
         else:
             self.mount.enforce_policy("projects:list:all")
 

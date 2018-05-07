@@ -1,19 +1,21 @@
 import cherrypy
 from ingredients_http.route import Route
 
+from deli.counter.auth.manager import DRIVERS
 from deli.counter.http.router import SandwichRouter
 
 
 class AuthRouter(SandwichRouter):
     def __init__(self):
         super().__init__()
-        self.drivers = {}
 
     def setup_routes(self, dispatcher: cherrypy.dispatch.RoutesDispatcher, uri_prefix: str):
-        self.drivers = self.mount.auth_manager.drivers
-
-        for _, driver in self.drivers.items():
-            driver_router: SandwichRouter = driver.auth_router()
+        for _, driver in DRIVERS.items():
+            try:
+                driver_router: SandwichRouter = driver.auth_router()
+            except NotImplementedError:
+                continue
+            driver_router.mount = self.mount
             driver_router.setup_routes(dispatcher, uri_prefix)
 
         super().setup_routes(dispatcher, uri_prefix)
@@ -23,10 +25,10 @@ class AuthRouter(SandwichRouter):
     @cherrypy.tools.json_out()
     def discover(self):
         data = {
-            "default": list(self.drivers.keys())[0]
+            "default": list(DRIVERS.keys())[0]
         }
 
-        for _, driver in self.drivers.items():
+        for _, driver in DRIVERS.items():
             data[driver.name] = driver.discover_options()
 
         return data

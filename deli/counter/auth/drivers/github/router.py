@@ -1,4 +1,3 @@
-import arrow
 import cherrypy
 import github
 import github.AuthenticatedUser
@@ -10,6 +9,7 @@ from ingredients_http.route import Route
 from simple_settings import settings
 from sqlalchemy_utils.types.json import json
 
+from deli.counter.auth.token import Token
 from deli.counter.auth.validation_models.github import RequestGithubAuthorization, RequestGithubToken
 from deli.counter.http.mounts.root.routes.v1.auth.validation_models.tokens import ResponseOAuthToken
 from deli.counter.http.router import SandwichRouter
@@ -25,12 +25,13 @@ class GithubAuthRouter(SandwichRouter):
         if self.driver.check_in_org(github_user) is False:
             raise cherrypy.HTTPError(403, "User not a member of GitHub organization: '" + settings.GITHUB_ORG + "'")
 
-        expiry = arrow.now().shift(days=+1)
-        token = self.driver.generate_user_token(expiry, github_user.login, self.driver.find_roles(github_user))
-
+        token = Token()
+        token.driver_name = self.driver.name
+        token.username = github_user.login
+        token.set_global_roles(self.driver.find_roles(github_user))
         response = ResponseOAuthToken()
-        response.access_token = token
-        response.expiry = expiry
+        response.access_token = token.marshal(self.mount.fernet)
+        response.expiry = token.expires_at
         return response
 
     @Route(route='authorization', methods=[RequestMethods.POST])

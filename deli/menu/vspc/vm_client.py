@@ -10,13 +10,14 @@ import arrow
 import yaml
 from cryptography.fernet import Fernet
 
+from deli.counter.auth.token import Token
 from deli.kubernetes.resources.const import ID_LABEL
 from deli.kubernetes.resources.v1alpha1.image.model import Image
 from deli.kubernetes.resources.v1alpha1.instance.model import Instance
 from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
 from deli.kubernetes.resources.v1alpha1.network.model import NetworkPort, Network
 from deli.kubernetes.resources.v1alpha1.region.model import Region
-from deli.kubernetes.resources.v1alpha1.service_account.model import ServiceAccount
+from deli.kubernetes.resources.v1alpha1.service_account.model import ProjectServiceAccount
 from deli.kubernetes.resources.v1alpha1.zone.model import Zone
 from deli.menu.models.out_of_band import OutOfBandInstance
 from deli.menu.vspc.async_telnet import CR
@@ -159,7 +160,7 @@ class VMClient(object):
             zone = Zone()
             zone.name = instance_model.zone_name
 
-            service_account = ServiceAccount()
+            service_account = ProjectServiceAccount()
             service_account.name = "None"
 
             instance = Instance()
@@ -263,22 +264,14 @@ class VMClient(object):
 
         service_account = instance.service_account
 
-        token_data = {
-            # Token only lasts 30 minutes. This should be more than enough
-            'expires_at': arrow.now().shift(minutes=+30),
-            'service_account': {
-                'id': service_account.id,
-                'name': service_account.name,
-            },
-            'project': instance.project_id,
-            'roles': {
-                'global': [],
-                'project': service_account.role_ids
-            }
-        }
+        token = Token()
+        token.expires_at = arrow.now().shift(minutes=+30)
+        token.driver_name = 'metadata'
+        token.project_id = instance.project_id
+        token.service_account_id = service_account.id
+        token.project_role_ids = service_account.role_ids
 
-        await self.write(PacketCode.RESPONSE_SECURITYDATA,
-                         self.fernet.encrypt(json.dumps(token_data).encode()).decode())
+        await self.write(PacketCode.RESPONSE_SECURITYDATA, token.marshal(self.fernet).decode())
 
     async def write(self, packet_code, data):
         b64data = base64.b64encode(data.encode()).decode('ascii')
