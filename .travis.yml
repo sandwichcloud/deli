@@ -7,7 +7,7 @@ env:
 addons:
   apt:
     packages:
-      - docker-ce
+       - docker-ce=18.03.1~ce-0~ubuntu
 install:
 - docker --version
 - pip install tox
