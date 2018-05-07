@@ -56,6 +56,9 @@ class ServiceAccountHelper(object):
         if project is not None and service_account.name == "default":
             raise cherrypy.HTTPError(409, 'Cannot update the default service account.')
 
+        if project is None and service_account.name == "admin":
+            raise cherrypy.HTTPError(409, 'Cannot update the admin service account.')
+
         roles = []
         for role_id in request.roles:
             if project is None:
@@ -79,6 +82,9 @@ class ServiceAccountHelper(object):
         if project is not None and service_account.name == "default":
             raise cherrypy.HTTPError(409, 'Cannot delete the default service account.')
 
+        if project is None and service_account.name == "admin":
+            raise cherrypy.HTTPError(409, 'Cannot delete the admin service account.')
+
         if service_account.state == ResourceState.ToDelete or service_account.state == ResourceState.Deleting:
             raise cherrypy.HTTPError(400, "Service Account is already being deleting")
 
@@ -95,6 +101,9 @@ class ServiceAccountHelper(object):
     def helper_create_key(self, project: Optional[Project]):
         request: RequestCreateServiceAccountKey = cherrypy.request.model
         service_account = cherrypy.request.resource_object
+
+        if project is None and service_account.name == "admin":
+            raise cherrypy.HTTPError(409, 'Cannot create keys for the admin service account.')
 
         if request.name in service_account.keys:
             raise cherrypy.HTTPError(400, 'Service account %s already has a key with the name of %s'
@@ -115,9 +124,13 @@ class ServiceAccountHelper(object):
         response.expiry = None
         return response
 
-    def helper_delete_key(self, name):
+    def helper_delete_key(self, name, project: Optional[Project]):
         cherrypy.response.status = 204
         service_account = cherrypy.request.resource_object
+
+        if project is None and service_account.name == "admin":
+            raise cherrypy.HTTPError(409, 'Cannot delete keys for the admin service account.')
+
         keys = service_account.keys
         keys.remove(name)
         service_account.keys = keys
@@ -179,7 +192,7 @@ class GlobalServiceAccountsRouter(SandwichRouter, ServiceAccountHelper):
     @cherrypy.tools.resource_object(id_param="service_account_id", cls=GlobalServiceAccount)
     @cherrypy.tools.enforce_policy(policy_name="service_accounts:global:key:delete")
     def delete_key(self, **kwargs):
-        return self.helper_delete_key(name=kwargs['name'])
+        return self.helper_delete_key(name=kwargs['name'], project=None)
 
 
 class ProjectServiceAccountsRouter(SandwichRouter, ServiceAccountHelper):
@@ -244,4 +257,4 @@ class ProjectServiceAccountsRouter(SandwichRouter, ServiceAccountHelper):
     @cherrypy.tools.resource_object(id_param="service_account_id", cls=ProjectServiceAccount)
     @cherrypy.tools.enforce_policy(policy_name="service_accounts:project:key:delete")
     def delete_key(self, **kwargs):
-        return self.helper_delete_key(name=kwargs['name'])
+        return self.helper_delete_key(name=kwargs['name'], project=cherrypy.request.project)

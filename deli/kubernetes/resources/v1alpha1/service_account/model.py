@@ -46,6 +46,15 @@ class GlobalServiceAccount(GlobalResourceModel):
     def keys(self, value):
         self._raw['spec']['keys'] = value
 
+    @classmethod
+    def create_admin_sa(cls):
+        admin_role = GlobalRole.get_by_name("admin")
+        
+        admin_sa = cls()
+        admin_sa.name = "admin"
+        admin_sa.roles = [admin_role]
+        admin_sa.create()
+
 
 class ProjectServiceAccount(ProjectResourceModel):
 

@@ -142,6 +142,12 @@ class RunManager(Daemon):
         ProjectQuota.create_crd()
         ProjectQuota.wait_for_crd()
 
+        GlobalServiceAccount.create_crd()
+        GlobalServiceAccount.wait_for_crd()
+        GlobalServiceAccount.create_admin_sa()
+        ProjectServiceAccount.create_crd()
+        ProjectServiceAccount.wait_for_crd()
+
         Region.create_crd()
         Region.wait_for_crd()
         Zone.create_crd()
@@ -152,10 +158,6 @@ class RunManager(Daemon):
         NetworkPort.wait_for_crd()
         Image.create_crd()
         Image.wait_for_crd()
-        GlobalServiceAccount.create_crd()
-        GlobalServiceAccount.wait_for_crd()
-        ProjectServiceAccount.create_crd()
-        ProjectServiceAccount.wait_for_crd()
         Flavor.create_crd()
         Flavor.wait_for_crd()
         Volume.create_crd()

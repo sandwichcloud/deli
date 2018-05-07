@@ -1,6 +1,6 @@
 import os
 
-from deli.counter.cli.commands.database.database import DatabaseCommand
+from deli.counter.cli.commands.gen_admin import GenAdmin
 
 
 def main():
@@ -9,5 +9,5 @@ def main():
     from deli.counter.cli.app import CounterApplication
 
     app = CounterApplication()
-    app.register_command(DatabaseCommand())
+    GenAdmin().register(app)
     app.run()

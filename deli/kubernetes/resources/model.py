@@ -195,11 +195,16 @@ class GlobalResourceModel(ResourceModel):
         return cls(resp)
 
     @classmethod
-    def get_by_name(cls, name):
-        objs = cls.list(label_selector=NAME_LABEL + "=" + name)
-        if len(objs) == 0:
-            return None
-        return objs[0]
+    def get_by_name(cls, name, safe=True):
+        try:
+            objs = cls.list(label_selector=NAME_LABEL + "=" + name)
+            if len(objs) == 0:
+                return None
+            return objs[0]
+        except ApiException as e:
+            if e.status == 404 and safe:
+                return None
+            raise
 
     def save(self, ignore=False):
         crd_api = client.CustomObjectsApi()
@@ -284,11 +289,16 @@ class ProjectResourceModel(ResourceModel):
         return cls(resp)
 
     @classmethod
-    def get_by_name(cls, project, name):
-        objs = cls.list(project, label_selector=NAME_LABEL + "=" + name)
-        if len(objs) == 0:
-            return None
-        return objs[0]
+    def get_by_name(cls, project, name, safe=True):
+        try:
+            objs = cls.list(project, label_selector=NAME_LABEL + "=" + name)
+            if len(objs) == 0:
+                return None
+            return objs[0]
+        except ApiException as e:
+            if e.status == 404 and safe:
+                return None
+            raise
 
     def save(self, ignore=False):
         crd_api = client.CustomObjectsApi()

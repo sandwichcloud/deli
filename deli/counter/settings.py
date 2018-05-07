@@ -68,7 +68,7 @@ KUBE_MASTER = os.environ.get("KUBEMASTER")
 # Auth             #
 ####################
 
-AUTH_DRIVERS = os.environ.get('AUTH_DRIVERS', "deli.counter.auth.drivers.database.driver:DatabaseAuthDriver").split(",")
+AUTH_DRIVERS = os.environ.get('AUTH_DRIVERS', "").split(",")
 AUTH_FERNET_KEYS = os.environ['AUTH_FERNET_KEYS'].split(",")
 
 ####################
@@ -84,19 +84,3 @@ GITHUB_TEAM_ROLES_PREFIX = os.environ.get("GITHUB_TEAM_ROLES_PREFIX", "sandwich-
 # Split the env var into a dict because it is faster to search
 _github_team_roles = os.environ.get('GITHUB_TEAM_ROLES', 'sandwich-admin:admin')
 GITHUB_TEAM_ROLES = dict(item.split(":") for item in _github_team_roles.split(","))
-
-####################
-# DATABASE AUTH    #
-####################
-
-DATABASE_DRIVER = os.environ['DATABASE_DRIVER']
-DATABASE_DB = os.environ['DATABASE_DB']
-DATABASE_PORT = os.environ.get('DATABASE_PORT')
-DATABASE_POOL_SIZE = os.environ.get('DATABASE_POOL_SIZE', 20)
-
-if os.environ.get('CLI'):
-    DATABASE_POOL_SIZE = -1
-
-DATABASE_HOST = os.environ['DATABASE_HOST']
-DATABASE_USERNAME = os.environ['DATABASE_USERNAME']
-DATABASE_PASSWORD = os.environ['DATABASE_PASSWORD']
