@@ -48,12 +48,13 @@ class GlobalServiceAccount(GlobalResourceModel):
 
     @classmethod
     def create_admin_sa(cls):
-        admin_role = GlobalRole.get_by_name("admin")
-        
-        admin_sa = cls()
-        admin_sa.name = "admin"
-        admin_sa.roles = [admin_role]
-        admin_sa.create()
+        if GlobalServiceAccount.get_by_name("admin") is None:
+            admin_role = GlobalRole.get_by_name("admin")
+
+            admin_sa = cls()
+            admin_sa.name = "admin"
+            admin_sa.roles = [admin_role]
+            admin_sa.create()
 
 
 class ProjectServiceAccount(ProjectResourceModel):

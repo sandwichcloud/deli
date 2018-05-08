@@ -1,6 +1,8 @@
-from ingredients_http.schematics.types import KubeName, ArrowType
+from ingredients_http.schematics.types import KubeName, ArrowType, EnumType
 from schematics import Model
 from schematics.types import ListType, UUIDType, IntType, StringType
+
+from deli.kubernetes.resources.model import ResourceState
 
 
 class RequestCreateRole(Model):
@@ -25,6 +27,7 @@ class ResponseRole(Model):
     id = UUIDType(required=True)
     name = KubeName(required=True, min_length=3)
     policies = ListType(StringType, default=list)
+    state = EnumType(ResourceState, required=True)
     created_at = ArrowType(required=True)
 
     @classmethod
@@ -33,6 +36,7 @@ class ResponseRole(Model):
         model.id = role.id
         model.name = role.name
         model.policies = role.policies
+        model.state = role.state
         model.created_at = role.created_at
 
         return model

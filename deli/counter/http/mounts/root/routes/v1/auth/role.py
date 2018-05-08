@@ -8,6 +8,7 @@ from deli.counter.auth.policy import POLICIES
 from deli.counter.http.mounts.root.routes.v1.auth.validation_models.role import RequestCreateRole, ResponseRole, \
     ParamsRole, ParamsListRoles, RequestRoleUpdate
 from deli.counter.http.router import SandwichRouter
+from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.role.model import GlobalRole, ProjectRole
 
@@ -61,6 +62,9 @@ class RoleHelper(object):
         if role.name in ['admin', 'default-member', 'default-service-account']:
             raise cherrypy.HTTPError(409, 'Cannot update the default roles')
 
+        if role.state != ResourceState.Created:
+            raise cherrypy.HTTPError(400, 'Role is not in the following state: ' + ResourceState.Created.value)
+
         policy_names = [p['name'] for p in POLICIES]
 
         for policy in request.policies:
@@ -80,6 +84,9 @@ class RoleHelper(object):
 
         if role.name in ['admin', 'default-member', 'default-service-account']:
             raise cherrypy.HTTPError(409, 'Cannot delete the default roles')
+
+        if role.state != ResourceState.Created:
+            raise cherrypy.HTTPError(400, 'Role is not in the following state: ' + ResourceState.Created.value)
 
         role.delete()
 

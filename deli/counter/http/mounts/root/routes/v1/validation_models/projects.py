@@ -1,7 +1,8 @@
-from ingredients_http.schematics.types import KubeName, ArrowType
+from ingredients_http.schematics.types import KubeName, ArrowType, EnumType
 from schematics import Model
 from schematics.types import UUIDType, IntType, BooleanType, ListType, StringType
 
+from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.project_member.model import ProjectMember
 from deli.kubernetes.resources.v1alpha1.project_quota.model import ProjectQuota
@@ -86,6 +87,7 @@ class ResponseProjectMember(Model):
     username = StringType(required=True)
     driver = StringType(required=True)
     roles = ListType(UUIDType, default=list)
+    state = EnumType(ResourceState, required=True)
     created_at = ArrowType(required=True)
 
     @classmethod
@@ -95,6 +97,7 @@ class ResponseProjectMember(Model):
         model.username = project_member.username
         model.driver = project_member.driver
         model.roles = project_member.roles
+        model.state = project_member.state
         model.created_at = project_member.created_at
 
         return model

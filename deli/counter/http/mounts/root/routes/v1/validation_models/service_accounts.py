@@ -1,6 +1,8 @@
-from ingredients_http.schematics.types import KubeName, ArrowType
+from ingredients_http.schematics.types import KubeName, ArrowType, EnumType
 from schematics import Model
 from schematics.types import UUIDType, ListType, StringType, IntType
+
+from deli.kubernetes.resources.model import ResourceState
 
 
 class RequestCreateServiceAccount(Model):
@@ -8,7 +10,7 @@ class RequestCreateServiceAccount(Model):
 
 
 class RequestUpdateServiceAccount(Model):
-    roles = ListType(StringType, required=True, min_size=1)
+    roles = ListType(StringType, required=True)
 
 
 class ParamsServiceAccount(Model):
@@ -23,8 +25,9 @@ class ParamsListServiceAccount(Model):
 class ResponseServiceAccount(Model):
     id = UUIDType(required=True)
     name = KubeName(required=True, min_length=3)
-    roles = ListType(UUIDType, required=True, min_size=1)
+    roles = ListType(UUIDType, required=True)
     keys = ListType(StringType, required=True)
+    state = EnumType(ResourceState, required=True)
     created_at = ArrowType(required=True)
 
     @classmethod
@@ -34,6 +37,7 @@ class ResponseServiceAccount(Model):
         model.name = service_account.name
         model.roles = service_account.role_ids
         model.keys = service_account.keys
+        model.state = service_account.state
         model.created_at = service_account.created_at
 
         return model

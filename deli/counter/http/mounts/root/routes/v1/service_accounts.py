@@ -27,6 +27,7 @@ class ServiceAccountHelper(object):
             service_account = GlobalServiceAccount.get_by_name(request.name)
             if service_account is not None:
                 raise cherrypy.HTTPError(400, 'A global service account with the requested name already exists.')
+            service_account = GlobalServiceAccount()
         else:
             service_account = ProjectServiceAccount.get_by_name(project, request.name)
             if service_account is not None:
@@ -58,6 +59,10 @@ class ServiceAccountHelper(object):
 
         if project is None and service_account.name == "admin":
             raise cherrypy.HTTPError(409, 'Cannot update the admin service account.')
+
+        if service_account.state != ResourceState.Created:
+            raise cherrypy.HTTPError(400,
+                                     'Service Account member is not in the following state: ' + ResourceState.Created.value)
 
         roles = []
         for role_id in request.roles:
@@ -109,6 +114,10 @@ class ServiceAccountHelper(object):
             raise cherrypy.HTTPError(400, 'Service account %s already has a key with the name of %s'
                                      % (service_account.name, request.name))
 
+        if service_account.state != ResourceState.Created:
+            raise cherrypy.HTTPError(400,
+                                     'Service Account member is not in the following state: ' + ResourceState.Created.value)
+
         service_account.keys = service_account.keys + [request.name]
         service_account.save()
 
@@ -127,6 +136,10 @@ class ServiceAccountHelper(object):
     def helper_delete_key(self, name, project: Optional[Project]):
         cherrypy.response.status = 204
         service_account = cherrypy.request.resource_object
+
+        if service_account.state != ResourceState.Created:
+            raise cherrypy.HTTPError(400,
+                                     'Service Account member is not in the following state: ' + ResourceState.Created.value)
 
         if project is None and service_account.name == "admin":
             raise cherrypy.HTTPError(409, 'Cannot delete keys for the admin service account.')

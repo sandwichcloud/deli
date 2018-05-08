@@ -57,10 +57,12 @@ class Token(object):
                 raise cherrypy.HTTPError(400, 'Current scoped project does not exist.')
 
         if token.service_account_id is not None:
-            if project is None:
-                service_account = GlobalServiceAccount.get(token.service_account_id)
-            else:
+            if project is not None:
                 service_account = ProjectServiceAccount.get(project, token.service_account_id)
+                if service_account is None:
+                    service_account = GlobalServiceAccount.get(token.service_account_id)
+            else:
+                service_account = GlobalServiceAccount.get(token.service_account_id)
 
             if service_account is None:
                 raise cherrypy.HTTPError(401, 'Invalid Authorization Token.')

@@ -60,7 +60,7 @@ class ProjectRouter(SandwichRouter):
         token: Token = cherrypy.request.token
         project: Project = cherrypy.request.resource_object
 
-        if project.is_member(token.username, token.driver_name) is False:
+        if token.service_account_id is None and project.is_member(token.username, token.driver_name) is False:
             self.mount.enforce_policy("projects:get:all")
 
         return ResponseProject.from_database(cherrypy.request.resource_object)
@@ -75,7 +75,7 @@ class ProjectRouter(SandwichRouter):
             "label_selector": []
         }
 
-        if all is False:
+        if token.service_account_id is None and all is False:
             kwargs['label_selector'].append(token.driver_name + "." + MEMBER_LABEL + "/" + token.username)
         else:
             self.mount.enforce_policy("projects:list:all")

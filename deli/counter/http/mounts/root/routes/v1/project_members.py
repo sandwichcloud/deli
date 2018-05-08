@@ -7,6 +7,7 @@ from ingredients_http.route import Route
 from deli.counter.http.mounts.root.routes.v1.validation_models.projects import ResponseProjectMember, \
     RequestProjectAddMember, ParamsProjectMember, ParamsListProjectMember, RequestProjectUpdateMember
 from deli.counter.http.router import SandwichRouter
+from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.project_member.model import ProjectMember
 from deli.kubernetes.resources.v1alpha1.role.model import ProjectRole
@@ -73,6 +74,10 @@ class ProjectMemberRouter(SandwichRouter):
 
         roles = []
 
+        if member.state != ResourceState.Created:
+            raise cherrypy.HTTPError(400,
+                                     'Project member is not in the following state: ' + ResourceState.Created.value)
+
         for role_id in request.roles:
             role: ProjectRole = ProjectRole.get(project, str(role_id))
             if role is None:
@@ -92,6 +97,10 @@ class ProjectMemberRouter(SandwichRouter):
         cherrypy.response.status = 204
         project: Project = cherrypy.request.project
         member: ProjectMember = cherrypy.request.resource_object
+
+        if member.state != ResourceState.Created:
+            raise cherrypy.HTTPError(400,
+                                     'Project member is not in the following state: ' + ResourceState.Created.value)
 
         project.remove_member(member)
         project.save()

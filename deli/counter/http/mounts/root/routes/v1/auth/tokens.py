@@ -69,9 +69,6 @@ class AuthTokenRouter(SandwichRouter):
     def scope_token(self):
         token = cherrypy.request.token
 
-        if token.service_account_id is not None:
-            raise cherrypy.HTTPError(403, "Service Accounts cannot scope tokens.")
-
         if token.project() is not None:
             raise cherrypy.HTTPError(403, "Cannot scope an already scoped token.")
 
@@ -81,11 +78,10 @@ class AuthTokenRouter(SandwichRouter):
         if project is None:
             raise cherrypy.HTTPError(404, 'A project with the requested id does not exist.')
 
-        project_role_ids = []
-        if project.is_member(token.username, token.driver_name):
+        if token.service_account_id is None and project.is_member(token.username, token.driver_name):
             member_id = project.get_member_id(token.username, token.driver_name)
             project_member: ProjectMember = ProjectMember.get(project, member_id)
-            project_role_ids.extend(project_member.roles)
+            token.project_role_ids = project_member.roles
         else:
             try:
                 token.enforce_policy("projects:scope:all")
@@ -94,7 +90,6 @@ class AuthTokenRouter(SandwichRouter):
 
         token.expires_at = arrow.now().shift(days=+1)
         token.project_id = project.id
-        token.project_role_ids = project_role_ids
 
         response = ResponseOAuthToken()
         response.access_token = token.marshal(self.mount.fernet)
