@@ -62,7 +62,8 @@ class ServiceAccountHelper(object):
 
         if service_account.state != ResourceState.Created:
             raise cherrypy.HTTPError(400,
-                                     'Service Account member is not in the following state: ' + ResourceState.Created.value)
+                                     'Service Account member is not in the following state: '
+                                     + ResourceState.Created.value)
 
         roles = []
         for role_id in request.roles:
@@ -116,7 +117,8 @@ class ServiceAccountHelper(object):
 
         if service_account.state != ResourceState.Created:
             raise cherrypy.HTTPError(400,
-                                     'Service Account member is not in the following state: ' + ResourceState.Created.value)
+                                     'Service Account member is not in the following state: '
+                                     + ResourceState.Created.value)
 
         service_account.keys = service_account.keys + [request.name]
         service_account.save()
@@ -139,7 +141,8 @@ class ServiceAccountHelper(object):
 
         if service_account.state != ResourceState.Created:
             raise cherrypy.HTTPError(400,
-                                     'Service Account member is not in the following state: ' + ResourceState.Created.value)
+                                     'Service Account member is not in the following state: '
+                                     + ResourceState.Created.value)
 
         if project is None and service_account.name == "admin":
             raise cherrypy.HTTPError(409, 'Cannot delete keys for the admin service account.')
