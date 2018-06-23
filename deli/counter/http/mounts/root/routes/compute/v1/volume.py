@@ -23,7 +23,7 @@ class VolumeRouter(SandwichProjectRouter):
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestCreateVolume)
     @cherrypy.tools.model_out(cls=ResponseVolume)
-    @cherrypy.tools.enforce_policy(policy_name="volumes:create")
+    @cherrypy.tools.enforce_permission(permission_name="volumes:create")
     def create(self):
         """Create a volume
         ---
@@ -75,7 +75,7 @@ class VolumeRouter(SandwichProjectRouter):
     @cherrypy.tools.model_params(cls=ParamsVolume)
     @cherrypy.tools.model_out(cls=ResponseVolume)
     @cherrypy.tools.resource_object(id_param="volume_name", cls=Volume)
-    @cherrypy.tools.enforce_policy(policy_name="volumes:get")
+    @cherrypy.tools.enforce_permission(permission_name="volumes:get")
     def get(self, **_):
         """Get a volume
         ---
@@ -93,7 +93,7 @@ class VolumeRouter(SandwichProjectRouter):
     @Route()
     @cherrypy.tools.model_params(cls=ParamsListVolume)
     @cherrypy.tools.model_out_pagination(cls=ResponseVolume)
-    @cherrypy.tools.enforce_policy(policy_name="volumes:list")
+    @cherrypy.tools.enforce_permission(permission_name="volumes:list")
     def list(self, limit: int, marker: uuid.UUID):
         """List volumes
         ---
@@ -119,7 +119,7 @@ class VolumeRouter(SandwichProjectRouter):
     @Route(route='{volume_name}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsVolume)
     @cherrypy.tools.resource_object(id_param="volume_name", cls=Volume)
-    @cherrypy.tools.enforce_policy(policy_name="volumes:delete")
+    @cherrypy.tools.enforce_permission(permission_name="volumes:delete")
     def delete(self, **_):
         """Delete a volume
         ---
@@ -151,7 +151,7 @@ class VolumeRouter(SandwichProjectRouter):
     @cherrypy.tools.model_params(cls=ParamsVolume)
     @cherrypy.tools.model_in(cls=RequestAttachVolume)
     @cherrypy.tools.resource_object(id_param="volume_name", cls=Volume)
-    @cherrypy.tools.enforce_policy(policy_name="volumes:action:attach")
+    @cherrypy.tools.enforce_permission(permission_name="volumes:action:attach")
     def action_attach(self, **_):
         """Attach a volume
         ---
@@ -198,7 +198,7 @@ class VolumeRouter(SandwichProjectRouter):
     @Route(route='{volume_name}/action/detach', methods=[RequestMethods.PUT])
     @cherrypy.tools.model_params(cls=ParamsVolume)
     @cherrypy.tools.resource_object(id_param="volume_name", cls=Volume)
-    @cherrypy.tools.enforce_policy(policy_name="volumes:action:detach")
+    @cherrypy.tools.enforce_permission(permission_name="volumes:action:detach")
     def action_detach(self, **_):
         """Detach a volume
         ---
@@ -229,7 +229,7 @@ class VolumeRouter(SandwichProjectRouter):
     @cherrypy.tools.model_params(cls=ParamsVolume)
     @cherrypy.tools.model_in(cls=RequestGrowVolume)
     @cherrypy.tools.resource_object(id_param="volume_name", cls=Volume)
-    @cherrypy.tools.enforce_policy(policy_name="volumes:action:grow")
+    @cherrypy.tools.enforce_permission(permission_name="volumes:action:grow")
     def action_grow(self, **_):
         """Grow a volume
         ---
@@ -278,7 +278,7 @@ class VolumeRouter(SandwichProjectRouter):
     @cherrypy.tools.model_in(cls=RequestCloneVolume)
     @cherrypy.tools.model_out(cls=ResponseVolume)
     @cherrypy.tools.resource_object(id_param="volume_name", cls=Volume)
-    @cherrypy.tools.enforce_policy(policy_name="volumes:action:grow")
+    @cherrypy.tools.enforce_permission(permission_name="volumes:action:grow")
     def action_clone(self, **_):
         """Clone a volume
         ---

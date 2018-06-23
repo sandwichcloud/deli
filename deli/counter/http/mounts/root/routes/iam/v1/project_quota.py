@@ -15,7 +15,7 @@ class ProjectQuotaRouter(SandwichProjectRouter):
 
     @Route(methods=[RequestMethods.GET])
     @cherrypy.tools.model_out(cls=ResponseProjectQuota)
-    @cherrypy.tools.enforce_policy(policy_name="projects:quota:get")
+    @cherrypy.tools.enforce_permission(permission_name="projects:quota:get")
     def get(self):
         """Get a project's quota
         ---
@@ -34,7 +34,7 @@ class ProjectQuotaRouter(SandwichProjectRouter):
 
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestProjectModifyQuota)
-    @cherrypy.tools.enforce_policy(policy_name="projects:quota:modify")
+    @cherrypy.tools.enforce_permission(permission_name="projects:quota:modify")
     def modify(self):
         """Modify a project's quota
         ---

@@ -19,7 +19,7 @@ class NetworkPortsRouter(SandwichProjectRouter):
     @cherrypy.tools.model_params(cls=ParamsNetworkPort)
     @cherrypy.tools.model_out(cls=ResponseNetworkPort)
     @cherrypy.tools.resource_object(id_param="network_port_id", cls=NetworkPort)
-    @cherrypy.tools.enforce_policy(policy_name="network_ports:get")
+    @cherrypy.tools.enforce_permission(permission_name="network_ports:get")
     def get(self, **_):
         """Get a network port
         ---
@@ -37,7 +37,7 @@ class NetworkPortsRouter(SandwichProjectRouter):
     @Route()
     @cherrypy.tools.model_params(cls=ParamsListNetworkPort)
     @cherrypy.tools.model_out_pagination(cls=ResponseNetworkPort)
-    @cherrypy.tools.enforce_policy(policy_name="network_ports:list")
+    @cherrypy.tools.enforce_permission(permission_name="network_ports:list")
     def list(self, limit, marker):
         """List network ports
         ---
@@ -58,7 +58,7 @@ class NetworkPortsRouter(SandwichProjectRouter):
     @Route(route='{network_port_id}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsNetworkPort)
     @cherrypy.tools.resource_object(id_param="network_port_id", cls=NetworkPort)
-    @cherrypy.tools.enforce_policy(policy_name="network_ports:delete")
+    @cherrypy.tools.enforce_permission(permission_name="network_ports:delete")
     def delete(self, **_):
         """Delete a network port
         ---

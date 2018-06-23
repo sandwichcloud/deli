@@ -7,7 +7,7 @@ from deli.kubernetes.resources.model import ResourceState
 
 class RequestCreateRole(Model):
     name = KubeName(required=True, min_length=3)
-    policies = ListType(StringType, default=list)
+    permissions = ListType(StringType, default=list)
 
 
 class ParamsRole(Model):
@@ -20,12 +20,12 @@ class ParamsListRoles(Model):
 
 
 class RequestRoleUpdate(Model):
-    policies = ListType(StringType, min_size=1)
+    permissions = ListType(StringType, min_size=1)
 
 
 class ResponseRole(Model):
     name = KubeName(required=True, min_length=3)
-    policies = ListType(StringType, default=list)
+    permissions = ListType(StringType, default=list)
     state = EnumType(ResourceState, required=True)
     created_at = ArrowType(required=True)
 
@@ -33,7 +33,7 @@ class ResponseRole(Model):
     def from_database(cls, role):
         model = cls()
         model.name = role.name
-        model.policies = role.policies
+        model.permissions = role.permissions
         model.state = role.state
         model.created_at = role.created_at
 

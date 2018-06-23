@@ -17,7 +17,7 @@ class RegionsRouter(SandwichRouter):
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestCreateRegion)
     @cherrypy.tools.model_out(cls=ResponseRegion)
-    @cherrypy.tools.enforce_policy(policy_name="regions:create")
+    @cherrypy.tools.enforce_permission(permission_name="regions:create")
     def create(self):
         """Create a region
         ---
@@ -97,7 +97,7 @@ class RegionsRouter(SandwichRouter):
     @Route(route='{region_name}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsRegion)
     @cherrypy.tools.resource_object(id_param="region_name", cls=Region)
-    @cherrypy.tools.enforce_policy(policy_name="regions:delete")
+    @cherrypy.tools.enforce_permission(permission_name="regions:delete")
     def delete(self, **_):
         """Delete a region
         ---
@@ -129,7 +129,7 @@ class RegionsRouter(SandwichRouter):
     @cherrypy.tools.model_params(cls=ParamsRegion)
     @cherrypy.tools.model_in(cls=RequestRegionSchedule)
     @cherrypy.tools.resource_object(id_param="region_name", cls=Region)
-    @cherrypy.tools.enforce_policy(policy_name="regions:action:schedule")
+    @cherrypy.tools.enforce_permission(permission_name="regions:action:schedule")
     def action_schedule(self, **_):
         """Allow or disallow a region to be scheduled
         ---

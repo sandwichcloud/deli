@@ -46,11 +46,11 @@ class RootMount(ApplicationMount):
             # The email will contain the project
             cherrypy.request.login = token.email + '/' + token.metadata['instance']
 
-    def enforce_policy(self, policy_name):
+    def enforce_permission(self, permission_name):
         project = None
         if hasattr(cherrypy.request, 'project'):
             project = cherrypy.request.project
-        cherrypy.request.token.enforce_policy(policy_name, project=project)
+        cherrypy.request.token.enforce_permission(permission_name, project=project)
 
     def validate_project_scope(self, delete_param=False):
         if 'project_name' in cherrypy.request.params:
@@ -82,7 +82,7 @@ class RootMount(ApplicationMount):
         cherrypy.tools.project_scope = cherrypy.Tool('on_start_resource', self.validate_project_scope, priority=30)
 
         cherrypy.tools.resource_object = cherrypy.Tool('before_request_body', self.resource_object, priority=40)
-        cherrypy.tools.enforce_policy = cherrypy.Tool('before_request_body', self.enforce_policy, priority=50)
+        cherrypy.tools.enforce_permission = cherrypy.Tool('before_request_body', self.enforce_permission, priority=50)
 
     def __setup_kubernetes(self):
         if settings.KUBE_CONFIG is not None or settings.KUBE_MASTER is not None:

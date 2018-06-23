@@ -4,7 +4,7 @@ import cherrypy
 from ingredients_http.request_methods import RequestMethods
 from ingredients_http.route import Route
 
-from deli.counter.auth.policy import PROJECT_POLICIES, SYSTEM_POLICIES
+from deli.counter.auth.permission import PROJECT_PERMISSIONS, SYSTEM_PERMISSIONS
 from deli.counter.http.mounts.root.routes.iam.v1.validation_models.role import RequestCreateRole, ResponseRole, \
     RequestRoleUpdate, ParamsRole, ParamsListRoles
 from deli.counter.http.router import SandwichProjectRouter, SandwichSystemRouter
@@ -29,16 +29,16 @@ class RoleHelper(object):
             role.project = project
 
         if project is not None:
-            policy_names = [p['name'] for p in PROJECT_POLICIES]
+            permission_names = [p['name'] for p in PROJECT_PERMISSIONS]
         else:
-            policy_names = [p['name'] for p in SYSTEM_POLICIES]
+            permission_names = [p['name'] for p in SYSTEM_PERMISSIONS]
 
-        for policy in request.policies:
-            if policy not in policy_names:
-                raise cherrypy.HTTPError(404, 'Unknown policy %s' % policy)
+        for permission in request.permissions:
+            if permission not in permission_names:
+                raise cherrypy.HTTPError(404, 'Unknown permission %s' % permission)
 
         role.name = request.name
-        role.policies = request.policies
+        role.permissions = request.permissions
         role.create()
 
         return ResponseRole.from_database(role)
@@ -64,15 +64,15 @@ class RoleHelper(object):
             raise cherrypy.HTTPError(400, 'Role is not in the following state: ' + ResourceState.Created.value)
 
         if project is not None:
-            policy_names = [p['name'] for p in PROJECT_POLICIES]
+            permission_names = [p['name'] for p in PROJECT_PERMISSIONS]
         else:
-            policy_names = [p['name'] for p in SYSTEM_POLICIES]
+            permission_names = [p['name'] for p in SYSTEM_PERMISSIONS]
 
-        for policy in request.policies:
-            if policy not in policy_names:
-                raise cherrypy.HTTPError(404, 'Unknown policy %s' % policy)
+        for permission in request.permissions:
+            if permission not in permission_names:
+                raise cherrypy.HTTPError(404, 'Unknown permission %s' % permission)
 
-        role.policies = request.policies
+        role.permissions = request.permissions
         role.save()
 
     def helper_delete(self):
@@ -95,7 +95,7 @@ class IAMSystemRolesRouter(SandwichSystemRouter, RoleHelper):
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestCreateRole)
     @cherrypy.tools.model_out(cls=ResponseRole)
-    @cherrypy.tools.enforce_policy(policy_name="roles:system:create")
+    @cherrypy.tools.enforce_permission(permission_name="roles:system:create")
     def create(self):
         """Create a system role
         ---
@@ -116,7 +116,7 @@ class IAMSystemRolesRouter(SandwichSystemRouter, RoleHelper):
     @cherrypy.tools.model_params(cls=ParamsRole)
     @cherrypy.tools.model_out(cls=ResponseRole)
     @cherrypy.tools.resource_object(id_param="role_name", cls=IAMSystemRole)
-    @cherrypy.tools.enforce_policy(policy_name="roles:system:get")
+    @cherrypy.tools.enforce_permission(permission_name="roles:system:get")
     def get(self, **_):
         """Get a system role
         ---
@@ -134,7 +134,7 @@ class IAMSystemRolesRouter(SandwichSystemRouter, RoleHelper):
     @Route()
     @cherrypy.tools.model_params(cls=ParamsListRoles)
     @cherrypy.tools.model_out_pagination(cls=ResponseRole)
-    @cherrypy.tools.enforce_policy(policy_name="roles:system:list")
+    @cherrypy.tools.enforce_permission(permission_name="roles:system:list")
     def list(self, limit, marker):
         """List system roles
         ---
@@ -153,7 +153,7 @@ class IAMSystemRolesRouter(SandwichSystemRouter, RoleHelper):
     @cherrypy.tools.model_params(cls=ParamsRole)
     @cherrypy.tools.model_in(cls=RequestRoleUpdate)
     @cherrypy.tools.resource_object(id_param="role_name", cls=IAMSystemRole)
-    @cherrypy.tools.enforce_policy(policy_name="roles:system:update")
+    @cherrypy.tools.enforce_permission(permission_name="roles:system:update")
     def update(self, **_):
         """Update a system role
         ---
@@ -173,7 +173,7 @@ class IAMSystemRolesRouter(SandwichSystemRouter, RoleHelper):
     @Route(route='{role_name}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsRole)
     @cherrypy.tools.resource_object(id_param="role_name", cls=IAMSystemRole)
-    @cherrypy.tools.enforce_policy(policy_name="roles:system:delete")
+    @cherrypy.tools.enforce_permission(permission_name="roles:system:delete")
     def delete(self, **_):
         """Delete a system role
         ---
@@ -196,7 +196,7 @@ class IAMProjectRolesRouter(SandwichProjectRouter, RoleHelper):
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestCreateRole)
     @cherrypy.tools.model_out(cls=ResponseRole)
-    @cherrypy.tools.enforce_policy(policy_name="roles:project:create")
+    @cherrypy.tools.enforce_permission(permission_name="roles:project:create")
     def create(self):
         """Create a project role
         ---
@@ -217,7 +217,7 @@ class IAMProjectRolesRouter(SandwichProjectRouter, RoleHelper):
     @cherrypy.tools.model_params(cls=ParamsRole)
     @cherrypy.tools.model_out(cls=ResponseRole)
     @cherrypy.tools.resource_object(id_param="role_name", cls=IAMProjectRole)
-    @cherrypy.tools.enforce_policy(policy_name="roles:project:get")
+    @cherrypy.tools.enforce_permission(permission_name="roles:project:get")
     def get(self, **_):
         """Get a project role
         ---
@@ -235,7 +235,7 @@ class IAMProjectRolesRouter(SandwichProjectRouter, RoleHelper):
     @Route()
     @cherrypy.tools.model_params(cls=ParamsListRoles)
     @cherrypy.tools.model_out_pagination(cls=ResponseRole)
-    @cherrypy.tools.enforce_policy(policy_name="roles:project:list")
+    @cherrypy.tools.enforce_permission(permission_name="roles:project:list")
     def list(self, limit, marker):
         """List project roles
         ---
@@ -254,7 +254,7 @@ class IAMProjectRolesRouter(SandwichProjectRouter, RoleHelper):
     @cherrypy.tools.model_params(cls=ParamsRole)
     @cherrypy.tools.model_in(cls=RequestRoleUpdate)
     @cherrypy.tools.resource_object(id_param="role_name", cls=IAMProjectRole)
-    @cherrypy.tools.enforce_policy(policy_name="roles:project:update")
+    @cherrypy.tools.enforce_permission(permission_name="roles:project:update")
     def update(self, **_):
         """Update a project role
         ---
@@ -274,7 +274,7 @@ class IAMProjectRolesRouter(SandwichProjectRouter, RoleHelper):
     @Route(route='{role_name}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsRole)
     @cherrypy.tools.resource_object(id_param="role_name", cls=IAMProjectRole)
-    @cherrypy.tools.enforce_policy(policy_name="roles:project:delete")
+    @cherrypy.tools.enforce_permission(permission_name="roles:project:delete")
     def delete(self, **_):
         """Delete a project role
         ---

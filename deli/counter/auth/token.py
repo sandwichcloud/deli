@@ -10,7 +10,7 @@ from cryptography.fernet import InvalidToken
 from jose import jwt
 from simple_settings import settings
 
-from deli.counter.auth.policy import SYSTEM_POLICIES
+from deli.counter.auth.permission import SYSTEM_PERMISSIONS
 from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.iam_group.model import IAMSystemGroup
 from deli.kubernetes.resources.v1alpha1.iam_policy.model import IAMPolicy
@@ -196,14 +196,15 @@ class Token(object):
 
         return projects
 
-    def enforce_policy(self, policy, project=None):
+    def enforce_permission(self, permission, project=None):
         if len(self.system_roles) > 0:
-            if policy in [p['name'] for p in SYSTEM_POLICIES]:
+            if permission in [p['name'] for p in SYSTEM_PERMISSIONS]:
                 for role_name in self.system_roles:
                     role = IAMSystemRole.get(role_name)
-                    if role is not None and policy in role.policies:
+                    if role is not None and permission in role.permissions:
                         return
-                raise cherrypy.HTTPError(403, "Insufficient permissions (%s) to perform the requested action." % policy)
+                raise cherrypy.HTTPError(403,
+                                         "Insufficient permissions (%s) to perform the requested action." % permission)
 
         if project is not None:
             project_policy = IAMPolicy.get(project.name)
@@ -212,10 +213,10 @@ class Token(object):
             project_roles = self.find_roles(project_policy)
             for role_name in project_roles:
                 role = IAMProjectRole.get(project, role_name)
-                if role is not None and policy in role.policies:
+                if role is not None and permission in role.permissions:
                     return
 
             raise cherrypy.HTTPError(403, "Insufficient permissions (%s) to perform the "
-                                          "requested action in the project %s." % (policy, project.name))
+                                          "requested action in the project %s." % (permission, project.name))
 
-        raise cherrypy.HTTPError(403, "Insufficient permissions (%s) to perform the requested action." % policy)
+        raise cherrypy.HTTPError(403, "Insufficient permissions (%s) to perform the requested action." % permission)

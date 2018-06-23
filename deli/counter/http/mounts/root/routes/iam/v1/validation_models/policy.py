@@ -1,17 +1,35 @@
+from ingredients_http.schematics.types import KubeName
 from schematics import Model
-from schematics.types import StringType, ListType, UUIDType, IntType
+from schematics.types import ListType, ModelType, StringType
+
+from deli.kubernetes.resources.v1alpha1.iam_policy.model import IAMPolicy
 
 
-class ParamsPolicy(Model):
-    policy_name = StringType(required=True)
-
-
-class ParamsListPolicy(Model):
-    limit = IntType(default=100, max_value=100, min_value=1)
-    marker = UUIDType()
+class PolicyBinding(Model):
+    role = KubeName(required=True)
+    members = ListType(StringType)
 
 
 class ResponsePolicy(Model):
-    name = StringType(required=True)
-    description = StringType(required=True)
-    tags = ListType(StringType)
+    resource_version = StringType(required=True)
+    bindings = ListType(ModelType(PolicyBinding), required=True)
+
+    @classmethod
+    def from_database(cls, policy: IAMPolicy):
+        model = cls()
+        model.resource_version = policy.resource_version
+
+        model.bindings = []
+
+        for binding in policy.bindings:
+            binding_model = PolicyBinding()
+            binding_model.role = binding['role']
+            binding_model.members = binding_model['members']
+            model.bindings.append(binding_model)
+
+        return model
+
+
+class RequestSetPolicy(Model):
+    resource_version = StringType(required=True)
+    bindings = ListType(ModelType(PolicyBinding), required=True)

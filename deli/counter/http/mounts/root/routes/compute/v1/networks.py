@@ -21,7 +21,7 @@ class NetworkRouter(SandwichRouter):
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestCreateNetwork)
     @cherrypy.tools.model_out(cls=ResponseNetwork)
-    @cherrypy.tools.enforce_policy(policy_name="networks:create")
+    @cherrypy.tools.enforce_permission(permission_name="networks:create")
     def create(self):
         """Create a network
         ---
@@ -49,8 +49,6 @@ class NetworkRouter(SandwichRouter):
         if region.state != ResourceState.Created:
             raise cherrypy.HTTPError(409, 'Can only create a network with a region in the following state: %s'.format(
                 ResourceState.Created))
-
-        # TODO: check duplicate (or overlapping) cidr
 
         network = Network()
         network.name = request.name
@@ -118,7 +116,7 @@ class NetworkRouter(SandwichRouter):
     @Route(route='{network_name}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsNetwork)
     @cherrypy.tools.resource_object(id_param="network_name", cls=Network)
-    @cherrypy.tools.enforce_policy(policy_name="networks:delete")
+    @cherrypy.tools.enforce_permission(permission_name="networks:delete")
     def delete(self, **_):
         """Delete a network
         ---

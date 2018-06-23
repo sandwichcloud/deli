@@ -23,7 +23,7 @@ class ProjectRouter(SandwichRouter):
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestCreateProject)
     @cherrypy.tools.model_out(cls=ResponseProject)
-    @cherrypy.tools.enforce_policy(policy_name="projects:create")
+    @cherrypy.tools.enforce_permission(permission_name="projects:create")
     def create(self):
         """Create a project
         ---
@@ -67,7 +67,7 @@ class ProjectRouter(SandwichRouter):
     @cherrypy.tools.model_out(cls=ResponseProject)
     @cherrypy.tools.project_scope()
     @cherrypy.tools.resource_object(id_param="project_name", cls=Project)
-    @cherrypy.tools.enforce_policy(policy_name="projects:get")
+    @cherrypy.tools.enforce_permission(permission_name="projects:get")
     def get(self, **_):
         """Get a project
         ---
@@ -109,7 +109,7 @@ class ProjectRouter(SandwichRouter):
     @cherrypy.tools.model_params(cls=ParamsProject)
     @cherrypy.tools.project_scope()
     @cherrypy.tools.resource_object(id_param="project_name", cls=Project)
-    @cherrypy.tools.enforce_policy(policy_name="projects:delete")
+    @cherrypy.tools.enforce_permission(permission_name="projects:delete")
     def delete(self, **_):
         """Delete a project
         ---

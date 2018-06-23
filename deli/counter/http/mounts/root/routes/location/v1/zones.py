@@ -17,7 +17,7 @@ class ZoneRouter(SandwichRouter):
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestCreateZone)
     @cherrypy.tools.model_out(cls=ResponseZone)
-    @cherrypy.tools.enforce_policy(policy_name="zones:create")
+    @cherrypy.tools.enforce_permission(permission_name="zones:create")
     def create(self):
         """Create a zone
         ---
@@ -108,7 +108,7 @@ class ZoneRouter(SandwichRouter):
     @Route(route='{zone_name}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsZone)
     @cherrypy.tools.resource_object(id_param="zone_name", cls=Zone)
-    @cherrypy.tools.enforce_policy(policy_name="zones:delete")
+    @cherrypy.tools.enforce_permission(permission_name="zones:delete")
     def delete(self, **_):
         """Delete a zone
         ---
@@ -139,7 +139,7 @@ class ZoneRouter(SandwichRouter):
     @cherrypy.tools.model_params(cls=ParamsZone)
     @cherrypy.tools.model_in(cls=RequestZoneSchedule)
     @cherrypy.tools.resource_object(id_param="zone_name", cls=Zone)
-    @cherrypy.tools.enforce_policy(policy_name="zones:action:schedule")
+    @cherrypy.tools.enforce_permission(permission_name="zones:action:schedule")
     def action_schedule(self, **_):
         """Allow or disallow a zone to be scheduled
         ---

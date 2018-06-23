@@ -1,4 +1,4 @@
-SYSTEM_POLICIES = [
+SYSTEM_PERMISSIONS = [
     # Roles
     {
         "name": "roles:system:create",
@@ -19,6 +19,15 @@ SYSTEM_POLICIES = [
     {
         "name": "roles:system:delete",
         "description": "Ability to delete a system role"
+    },
+    # Policy
+    {
+        "name": "policy:system:get",
+        "description": "Ability to get system policies"
+    },
+    {
+        "name": "policy:system:set",
+        "description": "Ability to set system policies"
     },
     # Flavors
     {
@@ -105,7 +114,7 @@ SYSTEM_POLICIES = [
     },
 ]
 
-PROJECT_POLICIES = [
+PROJECT_PERMISSIONS = [
     # Project
     {
         "name": "projects:get",
@@ -164,6 +173,15 @@ PROJECT_POLICIES = [
         "tags": [
             'editor'
         ]
+    },
+    # Policy
+    {
+        "name": "policy:project:get",
+        "description": "Ability to get project policies"
+    },
+    {
+        "name": "policy:project:set",
+        "description": "Ability to set project policies"
     },
     # Volumes
     {

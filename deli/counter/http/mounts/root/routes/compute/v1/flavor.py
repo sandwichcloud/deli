@@ -17,7 +17,7 @@ class FlavorRouter(SandwichRouter):
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestCreateFlavor)
     @cherrypy.tools.model_out(cls=ResponseFlavor)
-    @cherrypy.tools.enforce_policy(policy_name="flavors:create")
+    @cherrypy.tools.enforce_permission(permission_name="flavors:create")
     def create(self):
         """Create a flavor
         ---
@@ -85,7 +85,7 @@ class FlavorRouter(SandwichRouter):
     @Route(route='{flavor_name}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsFlavor)
     @cherrypy.tools.resource_object(id_param="flavor_name", cls=Flavor)
-    @cherrypy.tools.enforce_policy(policy_name="flavors:delete")
+    @cherrypy.tools.enforce_permission(permission_name="flavors:delete")
     def delete(self, **_):
         """Delete a Flavor
         ---

@@ -19,7 +19,7 @@ class KeypairsRouter(SandwichProjectRouter):
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestCreateKeypair)
     @cherrypy.tools.model_out(cls=ResponseKeypair)
-    @cherrypy.tools.enforce_policy(policy_name="keypairs:create")
+    @cherrypy.tools.enforce_permission(permission_name="keypairs:create")
     def create(self):
         """Create a keypair
         ---
@@ -52,7 +52,7 @@ class KeypairsRouter(SandwichProjectRouter):
     @cherrypy.tools.model_params(cls=ParamsKeypair)
     @cherrypy.tools.model_out(cls=ResponseKeypair)
     @cherrypy.tools.resource_object(id_param="keypair_name", cls=Keypair)
-    @cherrypy.tools.enforce_policy(policy_name="keypairs:get")
+    @cherrypy.tools.enforce_permission(permission_name="keypairs:get")
     def get(self, **_):
         """Get a keypair
         ---
@@ -70,7 +70,7 @@ class KeypairsRouter(SandwichProjectRouter):
     @Route()
     @cherrypy.tools.model_params(cls=ParamsListKeypair)
     @cherrypy.tools.model_out_pagination(cls=ResponseKeypair)
-    @cherrypy.tools.enforce_policy(policy_name="keypairs:list")
+    @cherrypy.tools.enforce_permission(permission_name="keypairs:list")
     def list(self, limit: int, marker: uuid.UUID):
         """List keypairs
         ---
@@ -91,7 +91,7 @@ class KeypairsRouter(SandwichProjectRouter):
     @Route(route='{keypair_name}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsKeypair)
     @cherrypy.tools.resource_object(id_param="keypair_name", cls=Keypair)
-    @cherrypy.tools.enforce_policy(policy_name="keypairs:delete")
+    @cherrypy.tools.enforce_permission(permission_name="keypairs:delete")
     def delete(self, **_):
         """Delete a keypair
         ---

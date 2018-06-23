@@ -127,7 +127,7 @@ class SystemServiceAccountsRouter(SandwichSystemRouter, ServiceAccountHelper):
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestCreateServiceAccount)
     @cherrypy.tools.model_out(cls=ResponseServiceAccount)
-    @cherrypy.tools.enforce_policy(policy_name="service_accounts:system:create")
+    @cherrypy.tools.enforce_permission(permission_name="service_accounts:system:create")
     def create(self):
         """Create a system service account
         ---
@@ -148,7 +148,7 @@ class SystemServiceAccountsRouter(SandwichSystemRouter, ServiceAccountHelper):
     @cherrypy.tools.model_params(cls=ParamsServiceAccount)
     @cherrypy.tools.model_out(cls=ResponseServiceAccount)
     @cherrypy.tools.resource_object(id_param="service_account_name", cls=SystemServiceAccount)
-    @cherrypy.tools.enforce_policy(policy_name="service_accounts:system:get")
+    @cherrypy.tools.enforce_permission(permission_name="service_accounts:system:get")
     def get(self, **_):
         """Get a system service account
         ---
@@ -166,7 +166,7 @@ class SystemServiceAccountsRouter(SandwichSystemRouter, ServiceAccountHelper):
     @Route()
     @cherrypy.tools.model_params(cls=ParamsListServiceAccount)
     @cherrypy.tools.model_out_pagination(cls=ResponseServiceAccount)
-    @cherrypy.tools.enforce_policy(policy_name="service_accounts:system:list")
+    @cherrypy.tools.enforce_permission(permission_name="service_accounts:system:list")
     def list(self, limit, marker):
         """List system service accounts
         ---
@@ -184,7 +184,7 @@ class SystemServiceAccountsRouter(SandwichSystemRouter, ServiceAccountHelper):
     @Route(route='{service_account_name}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsServiceAccount)
     @cherrypy.tools.resource_object(id_param="service_account_name", cls=SystemServiceAccount)
-    @cherrypy.tools.enforce_policy(policy_name="service_accounts:system:delete")
+    @cherrypy.tools.enforce_permission(permission_name="service_accounts:system:delete")
     def delete(self, **_):
         """Delete a system service account
         ---
@@ -204,7 +204,7 @@ class SystemServiceAccountsRouter(SandwichSystemRouter, ServiceAccountHelper):
     @cherrypy.tools.model_in(cls=RequestCreateServiceAccountKey)
     @cherrypy.tools.model_out(cls=ResponseOAuthToken)
     @cherrypy.tools.resource_object(id_param="service_account_name", cls=SystemServiceAccount)
-    @cherrypy.tools.enforce_policy(policy_name="service_accounts:system:key:create")
+    @cherrypy.tools.enforce_permission(permission_name="service_accounts:system:key:create")
     def create_key(self, **_):
         """Create a system service account key
         ---
@@ -224,7 +224,7 @@ class SystemServiceAccountsRouter(SandwichSystemRouter, ServiceAccountHelper):
     @Route(route='{service_account_name}/keys/{name}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsServiceAccountKey)
     @cherrypy.tools.resource_object(id_param="service_account_name", cls=SystemServiceAccount)
-    @cherrypy.tools.enforce_policy(policy_name="service_accounts:system:key:delete")
+    @cherrypy.tools.enforce_permission(permission_name="service_accounts:system:key:delete")
     def delete_key(self, **kwargs):
         """Delete a system service account key
         ---
@@ -247,7 +247,7 @@ class ProjectServiceAccountsRouter(SandwichProjectRouter, ServiceAccountHelper):
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestCreateServiceAccount)
     @cherrypy.tools.model_out(cls=ResponseServiceAccount)
-    @cherrypy.tools.enforce_policy(policy_name="service_accounts:project:create")
+    @cherrypy.tools.enforce_permission(permission_name="service_accounts:project:create")
     def create(self):
         """Create a project service account
         ---
@@ -268,7 +268,7 @@ class ProjectServiceAccountsRouter(SandwichProjectRouter, ServiceAccountHelper):
     @cherrypy.tools.model_params(cls=ParamsServiceAccount)
     @cherrypy.tools.model_out(cls=ResponseServiceAccount)
     @cherrypy.tools.resource_object(id_param="service_account_name", cls=ProjectServiceAccount)
-    @cherrypy.tools.enforce_policy(policy_name="service_accounts:project:get")
+    @cherrypy.tools.enforce_permission(permission_name="service_accounts:project:get")
     def get(self, **_):
         """Get a project service account
         ---
@@ -286,7 +286,7 @@ class ProjectServiceAccountsRouter(SandwichProjectRouter, ServiceAccountHelper):
     @Route()
     @cherrypy.tools.model_params(cls=ParamsListServiceAccount)
     @cherrypy.tools.model_out_pagination(cls=ResponseServiceAccount)
-    @cherrypy.tools.enforce_policy(policy_name="service_accounts:project:list")
+    @cherrypy.tools.enforce_permission(permission_name="service_accounts:project:list")
     def list(self, limit, marker):
         """List project service accounts
         ---
@@ -304,7 +304,7 @@ class ProjectServiceAccountsRouter(SandwichProjectRouter, ServiceAccountHelper):
     @Route(route='{service_account_name}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsServiceAccount)
     @cherrypy.tools.resource_object(id_param="service_account_name", cls=ProjectServiceAccount)
-    @cherrypy.tools.enforce_policy(policy_name="service_accounts:project:delete")
+    @cherrypy.tools.enforce_permission(permission_name="service_accounts:project:delete")
     def delete(self, **_):
         """Delete a project service account
         ---
@@ -324,7 +324,7 @@ class ProjectServiceAccountsRouter(SandwichProjectRouter, ServiceAccountHelper):
     @cherrypy.tools.model_in(cls=RequestCreateServiceAccountKey)
     @cherrypy.tools.model_out(cls=ResponseOAuthToken)
     @cherrypy.tools.resource_object(id_param="service_account_name", cls=ProjectServiceAccount)
-    @cherrypy.tools.enforce_policy(policy_name="service_accounts:project:key:create")
+    @cherrypy.tools.enforce_permission(permission_name="service_accounts:project:key:create")
     def create_key(self, **_):
         """Create a project service account key
         ---
@@ -344,7 +344,7 @@ class ProjectServiceAccountsRouter(SandwichProjectRouter, ServiceAccountHelper):
     @Route(route='{service_account_name}/keys/{name}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsServiceAccountKey)
     @cherrypy.tools.resource_object(id_param="service_account_name", cls=ProjectServiceAccount)
-    @cherrypy.tools.enforce_policy(policy_name="service_accounts:project:key:delete")
+    @cherrypy.tools.enforce_permission(permission_name="service_accounts:project:key:delete")
     def delete_key(self, **kwargs):
         """Delete a project service account key
         ---

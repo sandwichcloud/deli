@@ -79,9 +79,9 @@ def docstring_path_helper(spec, path, router, func, **kwargs):
                         'type': 'string'
                     }
                 })
-                
-            if 'tools.enforce_policy.policy_name' in cp_config:
-                data['x-required-policy'] = cp_config['tools.enforce_policy.policy_name']
+
+            if 'tools.enforce_permission.permission_name' in cp_config:
+                data['x-required-permission'] = cp_config['tools.enforce_permission.permission_name']
 
     return Path(path=path.path, operations=operations)
 

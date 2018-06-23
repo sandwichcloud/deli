@@ -21,7 +21,7 @@ class ImageRouter(SandwichProjectRouter):
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestCreateImage)
     @cherrypy.tools.model_out(cls=ResponseImage)
-    @cherrypy.tools.enforce_policy(policy_name="images:create")
+    @cherrypy.tools.enforce_permission(permission_name="images:create")
     def create(self):
         """Create an image
         ---
@@ -66,7 +66,7 @@ class ImageRouter(SandwichProjectRouter):
     @cherrypy.tools.model_params(cls=ParamsImage)
     @cherrypy.tools.model_out(cls=ResponseImage)
     @cherrypy.tools.resource_object(id_param="image_name", cls=Image)
-    @cherrypy.tools.enforce_policy(policy_name="images:get")
+    @cherrypy.tools.enforce_permission(permission_name="images:get")
     def get(self, **_):
         """Get an image
         ---
@@ -86,7 +86,7 @@ class ImageRouter(SandwichProjectRouter):
     @Route()
     @cherrypy.tools.model_params(cls=ParamsListImage)
     @cherrypy.tools.model_out_pagination(cls=ResponseImage)
-    @cherrypy.tools.enforce_policy(policy_name="images:list")
+    @cherrypy.tools.enforce_permission(permission_name="images:list")
     def list(self, region_name, visibility: ImageVisibility, limit: int, marker: uuid.UUID):
         """List images
         ---
@@ -118,7 +118,7 @@ class ImageRouter(SandwichProjectRouter):
     @Route(route='{image_name}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsImage)
     @cherrypy.tools.resource_object(id_param="image_name", cls=Image)
-    @cherrypy.tools.enforce_policy(policy_name="images:delete")
+    @cherrypy.tools.enforce_permission(permission_name="images:delete")
     def delete(self, **_):
         """Delete an image
         ---

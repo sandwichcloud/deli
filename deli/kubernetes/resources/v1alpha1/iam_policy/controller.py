@@ -52,6 +52,9 @@ class IAMPolicyController(ModelController):
                 needs_save = True
                 model.bindings.remove(binding)
 
+        # TODO: do we remove service accounts that no longer exist?
+        # TODO: do we remove groups that no longer exist?
+
         if needs_save:
             model.save()
 

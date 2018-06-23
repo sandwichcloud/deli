@@ -1,3 +1,4 @@
+# flake8: noqa
 import cherrypy
 from ingredients_http.route import Route
 

@@ -1,4 +1,4 @@
-from deli.counter.auth.policy import SYSTEM_POLICIES, PROJECT_POLICIES
+from deli.counter.auth.permission import SYSTEM_PERMISSIONS, PROJECT_PERMISSIONS
 from deli.kubernetes.controller import ModelController
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.v1alpha1.iam_role.model import IAMProjectRole, IAMSystemRole
@@ -35,12 +35,12 @@ class IAMSystemRoleController(ModelController):
         if model.name != 'admin':
             return
 
-        policy_names = [p['name'] for p in SYSTEM_POLICIES]
+        permission_names = [p['name'] for p in SYSTEM_PERMISSIONS]
 
-        if model.policies == policy_names:
+        if model.permissions == permission_names:
             return
 
-        model.policies = policy_names
+        model.permissions = permission_names
         model.save(ignore=True)
 
     def to_delete(self, model):
@@ -83,20 +83,22 @@ class IAMProjectRoleController(ModelController):
         model.save()
 
     def created(self, model: IAMProjectRole):
-        policies = {
-            'viewer': [policy['name'] for policy in PROJECT_POLICIES if 'viewer' in policy.get('tag', [])],
-            'editor': [policy['name'] for policy in PROJECT_POLICIES if 'editor' in policy.get('tag', [])],
-            'owner': [policy['name'] for policy in PROJECT_POLICIES]
+        permissions = {
+            'viewer': [permission['name'] for permission in PROJECT_PERMISSIONS if
+                       'viewer' in permission.get('tag', [])],
+            'editor': [permission['name'] for permission in PROJECT_PERMISSIONS if
+                       'editor' in permission.get('tag', [])],
+            'owner': [permission['name'] for permission in PROJECT_PERMISSIONS]
         }
 
-        if model.name not in policies.keys():
+        if model.name not in permissions.keys():
             return
 
-        policies = policies[model.name]
-        if model.policies == policies:
+        permissions = permissions[model.name]
+        if model.permissions == permissions:
             return
 
-        model.policies = policies
+        model.permissions = permissions
         model.save()
 
     def to_delete(self, model):

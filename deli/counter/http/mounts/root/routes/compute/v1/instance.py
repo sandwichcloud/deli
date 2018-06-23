@@ -31,7 +31,7 @@ class InstanceRouter(SandwichProjectRouter):
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestCreateInstance)
     @cherrypy.tools.model_out(cls=ResponseInstance)
-    @cherrypy.tools.enforce_policy(policy_name="instances:create")
+    @cherrypy.tools.enforce_permission(permission_name="instances:create")
     def create(self):
         """Create an instance
         ---
@@ -180,7 +180,7 @@ class InstanceRouter(SandwichProjectRouter):
     @cherrypy.tools.model_params(cls=ParamsInstance)
     @cherrypy.tools.model_out(cls=ResponseInstance)
     @cherrypy.tools.resource_object(id_param="instance_name", cls=Instance)
-    @cherrypy.tools.enforce_policy(policy_name="instances:get")
+    @cherrypy.tools.enforce_permission(permission_name="instances:get")
     def get(self, **_):
         """Get an instance
         ---
@@ -198,7 +198,7 @@ class InstanceRouter(SandwichProjectRouter):
     @Route()
     @cherrypy.tools.model_params(cls=ParamsListInstance)
     @cherrypy.tools.model_out_pagination(cls=ResponseInstance)
-    @cherrypy.tools.enforce_policy(policy_name="instances:list")
+    @cherrypy.tools.enforce_permission(permission_name="instances:list")
     def list(self, image_name, region_name, zone_name, limit: int, marker: uuid.UUID):
         """List instances
         ---
@@ -244,7 +244,7 @@ class InstanceRouter(SandwichProjectRouter):
     @Route(route='{instance_name}', methods=[RequestMethods.DELETE])
     @cherrypy.tools.model_params(cls=ParamsInstance)
     @cherrypy.tools.resource_object(id_param="instance_name", cls=Instance)
-    @cherrypy.tools.enforce_policy(policy_name="instances:delete")
+    @cherrypy.tools.enforce_permission(permission_name="instances:delete")
     def delete(self, **_):
         """Delete an instance
         ---
@@ -272,7 +272,7 @@ class InstanceRouter(SandwichProjectRouter):
     @Route(route='{instance_name}/action/start', methods=[RequestMethods.PUT])
     @cherrypy.tools.model_params(cls=ParamsInstance)
     @cherrypy.tools.resource_object(id_param="instance_name", cls=Instance)
-    @cherrypy.tools.enforce_policy(policy_name="instances:action:stop")
+    @cherrypy.tools.enforce_permission(permission_name="instances:action:stop")
     def action_start(self, **_):
         """Start an instance
         ---
@@ -302,7 +302,7 @@ class InstanceRouter(SandwichProjectRouter):
     @cherrypy.tools.model_params(cls=ParamsInstance)
     @cherrypy.tools.model_in(cls=RequestInstancePowerOffRestart)
     @cherrypy.tools.resource_object(id_param="instance_name", cls=Instance)
-    @cherrypy.tools.enforce_policy(policy_name="instances:action:start")
+    @cherrypy.tools.enforce_permission(permission_name="instances:action:start")
     def action_stop(self, **_):
         """Stop an instance
         ---
@@ -335,7 +335,7 @@ class InstanceRouter(SandwichProjectRouter):
     @cherrypy.tools.model_params(cls=ParamsInstance)
     @cherrypy.tools.model_in(cls=RequestInstancePowerOffRestart)
     @cherrypy.tools.resource_object(id_param="instance_name", cls=Instance)
-    @cherrypy.tools.enforce_policy(policy_name="instances:action:restart")
+    @cherrypy.tools.enforce_permission(permission_name="instances:action:restart")
     def action_restart(self, **_):
         """Restart an instance
         ---
@@ -369,7 +369,7 @@ class InstanceRouter(SandwichProjectRouter):
     @cherrypy.tools.model_in(cls=RequestInstanceImage)
     @cherrypy.tools.model_out(cls=ResponseImage)
     @cherrypy.tools.resource_object(id_param="instance_name", cls=Instance)
-    @cherrypy.tools.enforce_policy(policy_name="instances:action:image")
+    @cherrypy.tools.enforce_permission(permission_name="instances:action:image")
     def action_image(self, **_):
         """Image an instance
         ---
