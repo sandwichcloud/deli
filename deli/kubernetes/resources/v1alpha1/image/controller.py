@@ -2,8 +2,8 @@ from go_defer import with_defer, defer
 
 from deli.kubernetes.controller import ModelController
 from deli.kubernetes.resources.model import ResourceState
-from deli.kubernetes.resources.project import Project
-from deli.kubernetes.resources.v1alpha1.image.model import Image
+from deli.kubernetes.resources.v1alpha1.image.model import Image, ImageTask
+from deli.kubernetes.resources.v1alpha1.instance.model import Instance
 
 
 class ImageController(ModelController):
@@ -36,9 +36,21 @@ class ImageController(ModelController):
             model.delete()
             return
 
-        if model.file_name is None:
-            # Image was created via instance so lets wait until the file is ready
-            return
+        if model.task == ImageTask.IMAGING_INSTANCE:
+            if model.file_name is None:
+                # Image was created via instance so lets wait until the file is ready
+                from_instance = Instance.get(model.project, model.task_kwargs['instance_name'])
+                # If the from_instance is gone the image should be deleted
+                if from_instance is None:
+                    model.delete()
+                    return
+                # If the instance errored creating the image we should be deleted
+                if from_instance.state == ResourceState.Error:
+                    model.delete()
+                    return
+                return
+            else:
+                model.task = None
 
         defer(model.save)
 
@@ -61,11 +73,6 @@ class ImageController(ModelController):
             model.delete()
             return
 
-        for member_id in model.member_ids():
-            if Project.get(member_id) is None:
-                model.remove_member(member_id)
-        model.save(ignore=True)
-
     def to_delete(self, model):
         model.state = ResourceState.Deleting
         model.save()
@@ -84,7 +91,7 @@ class ImageController(ModelController):
                     self.vmware.delete_image(vmware_client, vmware_image)
                 else:
                     self.logger.warning(
-                        "Tried to delete image %s but couldn't find its backing file" % str(model.id))
+                        "Tried to delete image %s but couldn't find its backing file" % str(model.name))
 
         model.state = ResourceState.Deleted
 

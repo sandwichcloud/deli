@@ -69,15 +69,15 @@ class RegionController(ModelController):
 
     def can_delete(self, model):
         # These resources need the region to exist to successfully delete
-        zones = Zone.list(label_selector=REGION_LABEL + "=" + str(model.id))
+        zones = Zone.list(label_selector=REGION_LABEL + "=" + model.name)
         if len(zones) > 0:
             return False
 
-        images = Image.list(label_selector=REGION_LABEL + "=" + str(model.id))
+        images = Image.list_all(label_selector=REGION_LABEL + "=" + model.name)
         if len(images) > 0:
             return False
 
-        instances = Instance.list_all(label_selector=REGION_LABEL + "=" + str(model.id))
+        instances = Instance.list_all(label_selector=REGION_LABEL + "=" + model.name)
         if len(instances) > 0:
             return False
 

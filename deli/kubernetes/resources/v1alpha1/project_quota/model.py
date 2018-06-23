@@ -1,7 +1,7 @@
-from deli.kubernetes.resources.model import ProjectResourceModel
+from deli.kubernetes.resources.model import SystemResourceModel
 
 
-class ProjectQuota(ProjectResourceModel):
+class ProjectQuota(SystemResourceModel):
 
     def __init__(self, raw=None):
         super().__init__(raw)

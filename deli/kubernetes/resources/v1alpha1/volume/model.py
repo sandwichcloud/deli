@@ -1,5 +1,4 @@
 import enum
-import uuid
 
 from deli.kubernetes.resources.const import REGION_LABEL, ZONE_LABEL, ATTACHED_TO_LABEL
 from deli.kubernetes.resources.model import ProjectResourceModel
@@ -34,37 +33,37 @@ class Volume(ProjectResourceModel):
             }
 
     @property
-    def region_id(self):
-        region_id = self._raw['metadata']['labels'][REGION_LABEL]
-        if region_id == "":
+    def region_name(self):
+        region_name = self._raw['metadata']['labels'][REGION_LABEL]
+        if region_name == "":
             return None
-        return uuid.UUID(region_id)
+        return region_name
 
     @property
     def region(self):
-        region_id = self.region_id
-        if region_id is None:
+        region_name = self.region_name
+        if region_name is None:
             return None
-        return Region.get(region_id)
+        return Region.get(region_name)
 
     @property
-    def zone_id(self):
-        zone_id = self._raw['metadata']['labels'][ZONE_LABEL]
-        if zone_id == "":
+    def zone_name(self):
+        zone_name = self._raw['metadata']['labels'][ZONE_LABEL]
+        if zone_name == "":
             return None
-        return uuid.UUID(zone_id)
+        return zone_name
 
     @property
     def zone(self):
-        zone_id = self.zone_id
-        if zone_id is None:
+        zone_name = self.zone_name
+        if zone_name is None:
             return None
-        return Zone.get(zone_id)
+        return Zone.get(zone_name)
 
     @zone.setter
     def zone(self, value):
-        self._raw['metadata']['labels'][REGION_LABEL] = str(value.region.id)
-        self._raw['metadata']['labels'][ZONE_LABEL] = str(value.id)
+        self._raw['metadata']['labels'][REGION_LABEL] = str(value.region.name)
+        self._raw['metadata']['labels'][ZONE_LABEL] = str(value.name)
 
     @property
     def size(self):
@@ -83,15 +82,15 @@ class Volume(ProjectResourceModel):
         self._raw['spec']['backingId'] = value
 
     @property
-    def cloned_from_id(self):
+    def cloned_from_name(self):
         if self._raw['spec']['clonedFrom'] is None:
             return None
-        return uuid.UUID(self._raw['spec']['clonedFrom'])
+        return self._raw['spec']['clonedFrom']
 
     @property
     def cloned_from(self):
-        if self.cloned_from_id is not None:
-            return Volume.get(self.project, str(self.cloned_from_id))
+        if self.cloned_from_name is not None:
+            return Volume.get(self.project, str(self.cloned_from_name))
         return None
 
     @cloned_from.setter
@@ -99,28 +98,28 @@ class Volume(ProjectResourceModel):
         if value is None:
             self._raw['spec']['clonedFrom'] = None
         else:
-            self._raw['spec']['clonedFrom'] = str(value.id)
+            self._raw['spec']['clonedFrom'] = str(value.name)
 
     @property
-    def attached_to_id(self):
-        instance_id = self._raw['metadata']['labels'][ATTACHED_TO_LABEL]
-        if instance_id == "":
+    def attached_to_name(self):
+        instance_name = self._raw['metadata']['labels'][ATTACHED_TO_LABEL]
+        if instance_name == "":
             return None
-        return uuid.UUID(instance_id)
+        return instance_name
 
     @property
     def attached_to(self):
-        instance_id = self.attached_to_id
-        if instance_id is None:
+        instance_name = self.attached_to_name
+        if instance_name is None:
             return None
-        return Instance.get(self.project, instance_id)
+        return Instance.get(self.project, instance_name)
 
     @attached_to.setter
     def attached_to(self, value):
         if value is None:
             self._raw['metadata']['labels'][ATTACHED_TO_LABEL] = ""
         else:
-            self._raw['metadata']['labels'][ATTACHED_TO_LABEL] = str(value.id)
+            self._raw['metadata']['labels'][ATTACHED_TO_LABEL] = str(value.name)
 
     @property
     def task(self):
@@ -147,5 +146,5 @@ class Volume(ProjectResourceModel):
     def attach(self, instance: Instance):
         self.task = VolumeTask.ATTACHING
         self.task_kwargs = {
-            'to': str(instance.id)
+            'to': str(instance.name)
         }

@@ -50,16 +50,17 @@ class VolumeController(ModelController):
             datastore = self.vmware.get_datastore(vmware_client, zone.vm_datastore, datacenter)
             cloned_from: Volume = model.cloned_from
             if cloned_from is None:
-                if model.cloned_from_id:
+                if model.cloned_from_name:
                     model.error_message = "Could not clone volume, parent diapered."
                     return
-                model.backing_id = self.vmware.create_disk(vmware_client, str(model.id), model.size, datastore)
+                model.backing_id = self.vmware.create_disk(vmware_client, model.name, model.size, datastore)
                 model.task = None
                 model.state = ResourceState.Created
                 return
             else:
                 if 'task_key' not in model.task_kwargs:
-                    task = self.vmware.clone_disk(vmware_client, str(model.id), str(cloned_from.backing_id), datastore)
+                    task = self.vmware.clone_disk(vmware_client, model.name, str(cloned_from.backing_id),
+                                                  datastore)
                     model.task_kwargs = {"task_key": task.info.key}
                 else:
                     task = self.vmware.get_task(vmware_client, model.task_kwargs['task_key'])
@@ -69,65 +70,77 @@ class VolumeController(ModelController):
                             model.error_message = error
                             return
 
-                        model.backing_id = task.info.result.config.id.id
+                        model.backing_id = task.info.result.config.name.name
                         model.task = None
                         model.state = ResourceState.Created
 
     @with_defer
     def created(self, model: Volume):
-        defer(model.save, ignore=True)
 
         zone = model.zone
+        needs_save = False
+
+        def save():
+            if needs_save:
+                model.save(ignore=True)
+
+        defer(save)
+
+        if model.task is not None:
+            needs_save = True
+            with self.vmware.client_session() as vmware_client:
+                datacenter = self.vmware.get_datacenter(vmware_client, model.region.datacenter)
+                datastore = self.vmware.get_datastore(vmware_client, zone.vm_datastore, datacenter)
+                if model.task == VolumeTask.ATTACHING:
+                    instance = Instance.get(model.project, model.task_kwargs['to'])
+                    if instance is None:
+                        # Attaching to instance doesn't exist
+                        model.task = None
+                        return
+                    if instance.state in [ResourceState.ToDelete, ResourceState.Deleting, ResourceState.Deleted,
+                                          ResourceState.Error]:
+                        # Attaching to instance is deleting or errored.
+                        model.task = None
+                        return
+                    vm = self.vmware.get_vm(vmware_client, str(instance.name), datacenter)
+                    if vm is None:
+                        # VM doesn't exist
+                        model.task = None
+                        return
+                    self.vmware.attach_disk(vmware_client, model.backing_id, datastore, vm)
+                    model.attached_to = instance
+                    model.task = None
+                elif model.task == VolumeTask.DETACHING:
+                    self.detach_disk(vmware_client, datacenter, model)
+                    model.attached_to = None
+                    model.task = None
+                elif model.task == VolumeTask.GROWING:
+                    self.vmware.grow_disk(vmware_client, model.backing_id, model.task_kwargs['size'], datastore)
+                    model.size = model.task_kwargs['size']
+                    model.task = None
+                elif model.task == VolumeTask.CLONING:
+                    # Check new volume
+                    # If it's none, created or errored then we are done cloning
+                    new_volume = Volume.get(model.project, model.task_kwargs['volume_name'])
+                    if new_volume is None or new_volume.state in [ResourceState.Created, ResourceState.Error]:
+                        model.task = None
+
         if zone.state == ResourceState.Deleting:
             model.state = ResourceState.ToDelete
+            needs_save = True
 
-        with self.vmware.client_session() as vmware_client:
-            datacenter = self.vmware.get_datacenter(vmware_client, model.region.datacenter)
-            datastore = self.vmware.get_datastore(vmware_client, zone.vm_datastore, datacenter)
-            if model.task == VolumeTask.ATTACHING:
-                instance = Instance.get(model.project, model.task_kwargs['to'])
-                if instance is None:
-                    # Attaching to instance doesn't exist
-                    model.task = None
-                    return
-                if instance.state in [ResourceState.ToDelete, ResourceState.Deleting, ResourceState.Deleted,
-                                      ResourceState.Error]:
-                    # Attaching to instance is deleting or errored.
-                    model.task = None
-                    return
-                vm = self.vmware.get_vm(vmware_client, str(instance.id), datacenter)
-                if vm is None:
-                    # VM doesn't exist
-                    model.task = None
-                    return
-                self.vmware.attach_disk(vmware_client, model.backing_id, datastore, vm)
-                model.attached_to = instance
-                model.task = None
-            elif model.task == VolumeTask.DETACHING:
-                self.detach_disk(vmware_client, datacenter, model)
+        if model.attached_to_name is not None:
+            if model.attached_to is None:
                 model.attached_to = None
-                model.task = None
-            elif model.task == VolumeTask.GROWING:
-                self.vmware.grow_disk(vmware_client, model.backing_id, model.task_kwargs['size'], datastore)
-                model.size = model.task_kwargs['size']
-                model.task = None
-            elif model.task == VolumeTask.CLONING:
-                # Check new volume
-                # If it's none, created or errored then we are done cloning
-                new_volume = Volume.get(model.project, model.task_kwargs['volume_id'])
-                if new_volume is None or new_volume.state in [ResourceState.Created, ResourceState.Error]:
-                    model.task = None
+                needs_save = True
 
-            if model.attached_to_id is not None:
-                if model.attached_to is None:
-                    model.attached_to = None
-
-            if model.cloned_from_id is not None:
-                if model.cloned_from is None:
-                    model.cloned_from = None
+        if model.cloned_from_name is not None:
+            if model.cloned_from is None:
+                model.cloned_from = None
+                needs_save = True
 
     def detach_disk(self, vmware_client, datacenter, model):
-        vm = self.vmware.get_vm(vmware_client, str(model.attached_to_id), datacenter)
+        vm = self.vmware.get_vm(vmware_client, str(model.attached_to_name), datacenter)
         if vm is not None:
             self.vmware.detach_disk(vmware_client, model.backing_id, vm)
         model.attached_to = None

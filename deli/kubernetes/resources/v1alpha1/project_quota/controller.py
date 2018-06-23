@@ -1,5 +1,6 @@
 from deli.kubernetes.controller import ModelController
 from deli.kubernetes.resources.model import ResourceState
+from deli.kubernetes.resources.project import Project
 from deli.kubernetes.resources.v1alpha1.instance.model import Instance
 from deli.kubernetes.resources.v1alpha1.project_quota.model import ProjectQuota
 from deli.kubernetes.resources.v1alpha1.volume.model import Volume
@@ -33,21 +34,30 @@ class ProjectQuotaController(ModelController):
         model.save()
 
     def created(self, model: ProjectQuota):
-        model.used_vcpu = 0
-        model.used_ram = 0
-        model.used_disk = 0
+        used_vcpu = 0
+        used_ram = 0
+        used_disk = 0
 
-        instances = Instance.list(model.project)
+        project = Project.get(model.name)
+        if project is None:
+            model.delete()
+            return
+
+        instances = Instance.list(project)
         for instance in instances:
-            model.used_vcpu += instance.vcpus
-            model.used_ram += instance.ram
-            model.used_disk += instance.disk
+            used_vcpu += instance.vcpus
+            used_ram += instance.ram
+            used_disk += instance.disk
 
-        volumes = Volume.list(model.project)
+        volumes = Volume.list(project)
         for volume in volumes:
-            model.used_disk += volume.size
+            used_disk += volume.size
 
-        model.save(ignore=True)
+        if used_vcpu != model.used_vcpu or used_ram != model.used_ram or used_disk != model.used_disk:
+            model.used_vcpu = used_vcpu
+            model.used_ram = used_ram
+            model.used_disk = used_disk
+            model.save(ignore=True)
 
     def to_delete(self, model):
         model.state = ResourceState.Deleting

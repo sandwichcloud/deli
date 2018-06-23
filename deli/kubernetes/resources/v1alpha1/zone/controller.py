@@ -76,11 +76,11 @@ class ZoneController(ModelController):
 
     def can_delete(self, model):
         # These resources need the zone to exist to successfully delete
-        instances = Instance.list_all(label_selector=ZONE_LABEL + "=" + str(model.id))
+        instances = Instance.list_all(label_selector=ZONE_LABEL + "=" + str(model.name))
         if len(instances) > 0:
             return False
 
-        volumes = Volume.list_all(label_selector=ZONE_LABEL + "=" + str(model.id))
+        volumes = Volume.list_all(label_selector=ZONE_LABEL + "=" + str(model.name))
         if len(volumes) > 0:
             return False
 

@@ -65,22 +65,27 @@ KUBE_CONFIG = os.environ.get("KUBECONFIG")
 KUBE_MASTER = os.environ.get("KUBEMASTER")
 
 ####################
+# REDIS            #
+####################
+
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
+
+####################
 # Auth             #
 ####################
 
 AUTH_DRIVERS = os.environ.get('AUTH_DRIVERS', "").split(",")
 AUTH_FERNET_KEYS = os.environ['AUTH_FERNET_KEYS'].split(",")
 
-####################
-# GITHUB AUTH      #
-####################
+# URL of the OpenID Provider
+OPENID_ISSUER_URL = os.environ['OPENID_ISSUER_URL']
 
-GITHUB_URL = os.environ.get('GITHUB_URL', 'https://api.github.com')
-GITHUB_CLIENT_ID = os.environ.get('GITHUB_CLIENT_ID')
-GITHUB_CLIENT_SECRET = os.environ.get('GITHUB_CLIENT_SECRET')
-GITHUB_ORG = os.environ.get('GITHUB_ORG')
-GITHUB_TEAM_ROLES_PREFIX = os.environ.get("GITHUB_TEAM_ROLES_PREFIX", "sandwich-")
+# Client crendentials to auth with the OpenID Prover
+OPENID_CLIENT_ID = os.environ['OPENID_CLIENT_ID']
+OPENID_CLIENT_SECRET = os.environ['OPENID_CLIENT_SECRET']
 
-# Split the env var into a dict because it is faster to search
-_github_team_roles = os.environ.get('GITHUB_TEAM_ROLES', 'sandwich-admin:admin')
-GITHUB_TEAM_ROLES = dict(item.split(":") for item in _github_team_roles.split(","))
+# JWT Claim to use as the user's email
+OPENID_EMAIL_CLAIM = os.environ.get('OPENID_EMAIL_CLAIM', 'email')
+
+# JWT claim to use as the user's groups
+OPENID_GROUPS_CLAIM = os.environ.get('OPENID_GROUPS_CLAIM', 'groups')

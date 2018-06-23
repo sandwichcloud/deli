@@ -1,4 +1,5 @@
 import math
+import uuid
 
 import arrow
 from go_defer import with_defer, defer
@@ -89,15 +90,15 @@ class InstanceController(ModelController):
                 if image_size > model.disk:
                     model.error_message = "Requested image requires a disk size of at least %s GB" % image_size
                     return
-
-                old_vm = self.vmware.get_vm(vmware_client, str(model.id), datacenter)
-                if old_vm is not None:
-                    self.logger.info(
-                        "A backing for the vm %s / %s already exists so it is going to be deleted".format(
-                            model.project.id,
-                            model.id))
-                    self.vmware.power_off_vm(vmware_client, old_vm, hard=True)
-                    self.vmware.delete_vm(vmware_client, old_vm)
+                #
+                # old_vm = self.vmware.get_vm(vmware_client, str(model.vm_id), datacenter)
+                # if old_vm is not None:
+                #     self.logger.info(
+                #         "A backing for the vm %s / %s already exists so it is going to be deleted".format(
+                #             model.project.name,
+                #             model.name))
+                #     self.vmware.power_off_vm(vmware_client, old_vm, hard=True)
+                #     self.vmware.delete_vm(vmware_client, old_vm)
 
                 port_group = self.vmware.get_port_group(vmware_client, network_port.network.port_group, datacenter)
                 cluster = self.vmware.get_cluster(vmware_client, zone.vm_cluster, datacenter)
@@ -106,7 +107,7 @@ class InstanceController(ModelController):
                 if zone.vm_folder is not None:
                     folder = self.vmware.get_folder(vmware_client, zone.vm_folder, datacenter)
 
-                create_vm_task = self.vmware.create_vm_from_image(vm_name=str(model.id),
+                create_vm_task = self.vmware.create_vm_from_image(vm_name="sandwich-" + str(uuid.uuid4()),
                                                                   image=vmware_image,
                                                                   datacenter=datacenter,
                                                                   cluster=cluster,
@@ -125,61 +126,62 @@ class InstanceController(ModelController):
                     if error is not None:
                         model.error_message = error
                         return
+                    model.vm_id = task.info.result.config.instanceUuid
                     datacenter = self.vmware.get_datacenter(vmware_client, model.region.datacenter)
-                    vmware_vm = self.vmware.get_vm(vmware_client, str(model.id), datacenter)
+                    vmware_vm = self.vmware.get_vm(vmware_client, str(model.vm_id), datacenter)
                     self.vmware.resize_root_disk(vmware_client, model.disk, vmware_vm)
                     self.vmware.setup_serial_connection(vmware_client, self.vspc_url, vmware_vm)
 
                     if len(model.initial_volumes) > 0:
                         if len(model.initial_volumes_status) == 0:
-                            initial_volume_ids = []
+                            initial_volume_names = []
                             for idx, volume_data in enumerate(model.initial_volumes):
                                 volume = Volume()
                                 volume.project = model.project
-                                volume.name = str(model.id) + "-" + str(idx)
+                                volume.name = model.name + "-" + str(idx)
                                 volume.zone = model.zone
                                 volume.size = volume_data['size']
                                 volume.create()
 
-                                initial_volume_ids.append(str(volume.id))
-                            model.initial_volumes_status = initial_volume_ids
+                                initial_volume_names.append(volume.name)
+                            model.initial_volumes_status = initial_volume_names
                             return
                         else:
                             attached_vols = 0
-                            for volume_id in model.initial_volumes_status:
-                                volume: Volume = Volume.get(model.project, volume_id)
+                            for volume_name in model.initial_volumes_status:
+                                volume: Volume = Volume.get(model.project, volume_name)
                                 if volume is None:
-                                    model.error_message = "Volume " + str(
-                                        volume.id) + " has disappeared while trying to attach"
+                                    model.error_message = "Volume " + volume.name + \
+                                                          " has disappeared while trying to attach"
                                     return
                                 if volume.state in [ResourceState.ToCreate, ResourceState.Creating]:
                                     continue
                                 if volume.state != ResourceState.Created:
                                     model.error_message = "Cannot attach volume " + str(
-                                        volume.id) + " while it is in the following state: " + volume.state.value
+                                        volume.name) + " while it is in the following state: " + volume.state.value
                                     return
-                                if volume.attached_to_id == model.id:
+                                if volume.attached_to_name == model.name:
                                     attached_vols += 1
                                     continue
-                                if volume.attached_to_id is not None and volume.attached_to_id != model.id:
+                                if volume.attached_to_name is not None and volume.attached_to_name != model.name:
                                     model.error_message = "Volume " + str(
-                                        volume.id) + " has been attached to another instance."
+                                        volume.name) + " has been attached to another instance."
                                     return
                                 if volume.task is None:
                                     volume.attach(model)
                                     volume.save()
                                 else:
                                     model.error_message = "Cannot attach volume" + str(
-                                        volume.id) + " while a task is running on it."
+                                        volume.name) + " while a task is running on it."
                                     return
                             if attached_vols != len(model.initial_volumes_status):
                                 return
 
                     self.vmware.power_on_vm(vmware_client, vmware_vm)
                     model.task = None
+                    model.power_state = VMPowerState.POWERED_ON
                     model.state = ResourceState.Created
 
-    @with_defer
     def created(self, model: Instance):
         region = model.region
         # Check our region, if it is not created we should be deleted
@@ -201,31 +203,36 @@ class InstanceController(ModelController):
             model.delete()
             return
 
-        defer(model.save, ignore=True)
-
         # If the image doesn't exist we should clear it
-        if model.image_id is not None:
+        if model.image_name is not None:
             if model.image is None:
                 model.image = None
+                model.save()
+                return
 
         with self.vmware.client_session() as vmware_client:
             datacenter = self.vmware.get_datacenter(vmware_client, region.datacenter)
-            vmware_vm = self.vmware.get_vm(vmware_client, str(model.id), datacenter)
+            vmware_vm = self.vmware.get_vm(vmware_client, str(model.vm_id), datacenter)
 
             if vmware_vm is None:
                 model.error_message = "Backing VM disappeared"
+                model.save()
                 return
 
             if model.task == VMTask.STARTING:
                 self.vmware.power_on_vm(vmware_client, vmware_vm)
                 model.power_state = VMPowerState.POWERED_ON
                 model.task = None
+                model.save()
+                return
             elif model.task == VMTask.STOPPING or model.task == VMTask.RESTARTING:
                 is_shutdown = self.shutdown_vm(vmware_client, vmware_vm, model)
                 if is_shutdown:
                     if model.task == VMTask.RESTARTING:
                         self.vmware.power_on_vm(vmware_client, vmware_vm)
                     model.task = None
+                    model.save()
+                    return
             elif model.task == VMTask.IMAGING:
                 if 'task_key' not in model.task_kwargs:
                     datastore = self.vmware.get_datastore(vmware_client, region.image_datastore, datacenter)
@@ -235,6 +242,8 @@ class InstanceController(ModelController):
                     clone_vm_task, image_file_name = self.vmware.clone_and_template_vm(vmware_vm, datastore, folder)
                     model.task_kwargs["image_file_name"] = image_file_name
                     model.task_kwargs["task_key"] = clone_vm_task.info.key
+                    model.save()
+                    return
                 else:
                     task = self.vmware.get_task(vmware_client, model.task_kwargs['task_key'])
                     done, error = self.vmware.is_task_done(task)
@@ -242,16 +251,23 @@ class InstanceController(ModelController):
                         if error is not None:
                             model.error_message = error
                             return
-                        image: Image = Image.get(model.project, model.task_kwargs['image_id'])
+                        image: Image = Image.get(model.project, model.task_kwargs['image_name'])
                         image.file_name = model.task_kwargs["image_file_name"]
                         image.save()
                         model.task = None
+                        model.save()
+                        return
 
             power_state = str(vmware_vm.runtime.powerState)
-            if power_state == "poweredOn":
+            if power_state == "poweredOn" and model.power_state != VMPowerState.POWERED_ON:
                 model.power_state = VMPowerState.POWERED_ON
-            else:
+                model.save()
+                return
+
+            if power_state == "poweredOff" and model.power_state != VMPowerState.POWERED_OFF:
                 model.power_state = VMPowerState.POWERED_OFF
+                model.save()
+                return
 
     def shutdown_vm(self, vmware_client, vmware_vm, model):
         if 'timeout_at' not in model.task_kwargs:
@@ -260,13 +276,13 @@ class InstanceController(ModelController):
                 self.vmware.power_off_vm(vmware_client, vmware_vm, hard=True)
                 return True
             self.vmware.power_off_vm(vmware_client, vmware_vm)
-            model.task_kwargs["timeout_at"] = arrow.now().shift(seconds=+model.task_kwargs['timeout']).isoformat()
+            model.task_kwargs["timeout_at"] = arrow.now('UTC').shift(seconds=+model.task_kwargs['timeout']).isoformat()
         else:
             power_state = str(vmware_vm.runtime.powerState)
             if power_state != 'poweredOn':
                 return True
             timeout_at = arrow.get(model.task_kwargs['timeout_at'])
-            if timeout_at <= arrow.now():
+            if timeout_at <= arrow.now('UTC'):
                 self.vmware.power_off_vm(vmware_client, vmware_vm, hard=True)
                 return True
 
@@ -288,11 +304,11 @@ class InstanceController(ModelController):
         if region is not None:
             with self.vmware.client_session() as vmware_client:
                 datacenter = self.vmware.get_datacenter(vmware_client, region.datacenter)
-                vmware_vm = self.vmware.get_vm(vmware_client, str(model.id), datacenter)
+                vmware_vm = self.vmware.get_vm(vmware_client, str(model.vm_id), datacenter)
                 if vmware_vm is None:
                     self.logger.warning(
-                        "Could not find backing vm for instance %s/%s when trying to delete" % (model.project.id,
-                                                                                                model.id))
+                        "Could not find backing vm for instance %s/%s when trying to delete" % (model.project.name,
+                                                                                                model.name))
                 else:
                     power_state = str(vmware_vm.runtime.powerState)
                     if power_state == 'poweredOn':
@@ -300,19 +316,19 @@ class InstanceController(ModelController):
                         if is_shutdown is False:
                             return
 
-                    for idx, volume_id in enumerate(model.initial_volumes_status):
+                    for idx, volume_name in enumerate(model.initial_volumes_status):
                         delete = model.initial_volumes[idx]['auto_delete']
                         if delete:
-                            volume: Volume = Volume.get(model.project, volume_id)
+                            volume: Volume = Volume.get(model.project, volume_name)
                             if volume is None:
                                 continue
                             if volume.state in [ResourceState.ToDelete, ResourceState.Deleting, ResourceState.Deleted]:
                                 continue
-                            if volume.attached_to_id == model.id:
+                            if volume.attached_to_name == model.name:
                                 volume.delete()
 
                     attached_volumes = Volume.list(model.project,
-                                                   label_selector=ATTACHED_TO_LABEL + "=" + str(model.id))
+                                                   label_selector=ATTACHED_TO_LABEL + "=" + str(model.name))
                     if len(attached_volumes) > 0:
                         for volume in attached_volumes:
                             if volume.state in [ResourceState.ToDelete, ResourceState.Deleting, ResourceState.Deleted]:
@@ -340,7 +356,7 @@ class InstanceController(ModelController):
         Currently this just finds a zone that can host the instances and returns that.
         We may want a better way to balance instances across zones in the future
         """
-        zones = Zone.list(label_selector=REGION_LABEL + '=' + str(region.id))
+        zones = Zone.list(label_selector=REGION_LABEL + '=' + str(region.name))
 
         for zone in zones:
             if zone.schedulable is False:
@@ -352,13 +368,13 @@ class InstanceController(ModelController):
 
     def can_zone_host(self, vmware_client, datacenter, zone, model):
         cluster = self.vmware.get_cluster(vmware_client, zone.vm_cluster, datacenter)
-        instances = Instance.list_all(label_selector=ZONE_LABEL + '=' + str(zone.id))
+        instances = Instance.list_all(label_selector=ZONE_LABEL + '=' + str(zone.name))
         used_resources = {}
         for instance in instances:
-            if instance.id == model.id:
+            if instance.name == model.name:
                 # Skip own instance
                 continue
-            vm = self.vmware.get_vm(vmware_client, str(instance.id), datacenter)
+            vm = self.vmware.get_vm(vmware_client, str(instance.vm_id), datacenter)
             if vm is None:
                 continue
             # If the  VM doesn't have a host we should reserve it on all hosts

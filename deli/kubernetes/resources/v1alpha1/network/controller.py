@@ -44,7 +44,7 @@ class NetworkController(ModelController):
         with self.vmware.client_session() as vmware_client:
             datacenter = self.vmware.get_datacenter(vmware_client, region.datacenter)
             if datacenter is None:
-                model.error_message = "Could not find VMWare Datacenter for region %s " % str(region.id)
+                model.error_message = "Could not find VMWare Datacenter for region %s " % str(region.name)
                 return
 
             port_group = self.vmware.get_port_group(vmware_client, model.port_group, datacenter)
@@ -127,7 +127,7 @@ class NetworkPortController(ModelController):
         self.lock.acquire()
         defer(self.lock.release)
 
-        network_ports = NetworkPort.list_all(label_selector=NETWORK_LABEL + "=" + str(network.id))
+        network_ports = NetworkPort.list_all(label_selector=NETWORK_LABEL + "=" + str(network.name))
         for network_port in network_ports:
             if network_port.ip_address is not None:
                 usable_addresses.remove(network_port.ip_address)
@@ -153,7 +153,7 @@ class NetworkPortController(ModelController):
         model.save()
 
     def deleting(self, model):
-        instances = Instance.list_all(label_selector=NETWORK_PORT_LABEL + "=" + str(model.id))
+        instances = Instance.list_all(label_selector=NETWORK_PORT_LABEL + "=" + str(model.name))
         if len(instances) > 0:
             # There is still an instance with the network port so lets wait
             return

@@ -8,8 +8,9 @@ from kubernetes import config
 from kubernetes.client import Configuration
 from simple_settings import settings
 
+from deli.cache import cache_client
 from deli.counter.auth.token import Token
-from deli.kubernetes.resources.v1alpha1.service_account.model import GlobalServiceAccount
+from deli.kubernetes.resources.v1alpha1.iam_service_account.model import SystemServiceAccount
 
 
 class GenAdmin(Command):
@@ -41,24 +42,23 @@ class GenAdmin(Command):
         else:
             config.load_incluster_config()
 
+        cache_client.connect(url=settings.REDIS_URL)
         return 0
 
     def run(self, args) -> int:
         fernet = Fernet(settings.AUTH_FERNET_KEYS[0])
 
-        service_account = GlobalServiceAccount.get_by_name('admin')
+        service_account = SystemServiceAccount.get('admin')
         if service_account is None:
             self.logger.error("Could not find admin service account. Is the manager running?")
             return 1
 
-        key_name = str(uuid.uuid4())
-        service_account.keys = [key_name]
+        service_account.keys = {"admin": arrow.now('UTC').shift(years=+10)}
         service_account.save()
 
         token = Token()
-        token.driver_name = 'metadata'
-        token.service_account_id = service_account.id
-        token.service_account_key = key_name
+        token.email = service_account.email
+        token.metadata['key'] = 'admin'
 
         self.logger.info("Old admin keys are now invalid.")
         self.logger.info("Admin Key: " + token.marshal(fernet).decode())

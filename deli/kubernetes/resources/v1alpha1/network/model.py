@@ -1,12 +1,11 @@
 import ipaddress
-import uuid
 
 from deli.kubernetes.resources.const import REGION_LABEL, NETWORK_LABEL
-from deli.kubernetes.resources.model import GlobalResourceModel, ProjectResourceModel
+from deli.kubernetes.resources.model import SystemResourceModel, ProjectResourceModel
 from deli.kubernetes.resources.v1alpha1.region.model import Region
 
 
-class Network(GlobalResourceModel):
+class Network(SystemResourceModel):
 
     def __init__(self, raw=None):
         super().__init__(raw)
@@ -24,22 +23,22 @@ class Network(GlobalResourceModel):
             }
 
     @property
-    def region_id(self):
-        region_id = self._raw['metadata']['labels'][REGION_LABEL]
-        if region_id == "":
+    def region_name(self):
+        region_name = self._raw['metadata']['labels'][REGION_LABEL]
+        if region_name == "":
             return None
-        return uuid.UUID(region_id)
+        return region_name
 
     @property
     def region(self):
-        region_id = self.region_id
-        if region_id is None:
+        region_name = self.region_name
+        if region_name is None:
             return None
-        return Region.get(region_id)
+        return Region.get(region_name)
 
     @region.setter
     def region(self, value):
-        self._raw['metadata']['labels'][REGION_LABEL] = str(value.id)
+        self._raw['metadata']['labels'][REGION_LABEL] = value.name
 
     @property
     def port_group(self):
@@ -105,8 +104,8 @@ class NetworkPort(ProjectResourceModel):
             }
 
     @property
-    def network_id(self):
-        return uuid.UUID(self._raw['metadata']['labels'][NETWORK_LABEL])
+    def network_name(self):
+        return self._raw['metadata']['labels'][NETWORK_LABEL]
 
     @property
     def network(self):
@@ -114,7 +113,7 @@ class NetworkPort(ProjectResourceModel):
 
     @network.setter
     def network(self, value):
-        self._raw['metadata']['labels'][NETWORK_LABEL] = str(value.id)
+        self._raw['metadata']['labels'][NETWORK_LABEL] = str(value.name)
 
     @property
     def ip_address(self):

@@ -1,11 +1,12 @@
-import uuid
+import json
 
 import arrow
 from kubernetes import client
 from kubernetes.client import V1DeleteOptions, V1Namespace
 from kubernetes.client.rest import ApiException
 
-from deli.kubernetes.resources.const import NAME_LABEL, MEMBER_LABEL, PROJECT_LABEL
+from deli.cache import cache_client
+from deli.kubernetes.resources.const import PROJECT_LABEL
 
 
 class Project(object):
@@ -16,9 +17,8 @@ class Project(object):
                 "apiVersion": "v1",
                 "kind": "Namespace",
                 "metadata": {
-                    "name": str(uuid.uuid4()),
+                    "name": '',
                     "labels": {
-                        NAME_LABEL: None,
                         PROJECT_LABEL: "true"
                     }
                 }
@@ -29,47 +29,55 @@ class Project(object):
             self._raw = raw
 
     @property
-    def id(self):
-        return uuid.UUID(self._raw['metadata']['name'])
-
-    @property
     def name(self):
-        return self._raw['metadata']['labels'][NAME_LABEL]
+        return self._raw['metadata']['name'].replace("sandwich-", "")
 
     @name.setter
     def name(self, value):
-        self._raw['metadata']['labels'][NAME_LABEL] = value
+        self._raw['metadata']['name'] = "sandwich-" + value
 
     def create(self):
         core_api = client.CoreV1Api()
         self._raw = core_api.create_namespace(self._raw).to_dict()
+        cache_client.set('project_' + self.name, self._raw)
+
+    @property
+    def state(self):
+        return self._raw['status']["phase"]
 
     @classmethod
-    def get(cls, id, safe=True):
-        core_api = client.CoreV1Api()
-        try:
-            resp = core_api.read_namespace(str(id)).to_dict()
-            if resp is None:
-                return None
-            if resp['metadata']['labels'] is None:
-                return None
-            if PROJECT_LABEL not in resp['metadata']['labels']:
-                return None
-        except ApiException as e:
-            if e.status == 404 and safe:
-                return None
-            raise
-        return cls(resp)
+    def get(cls, name, safe=True, from_cache=True):
+        resp = None
+        if from_cache:
+            resp = cache_client.get("project_" + name)
+        if resp is None:
+            core_api = client.CoreV1Api()
+            try:
+                resp = core_api.read_namespace("sandwich-" + name).to_dict()
+                if resp is None:
+                    return None
+                if resp['metadata']['labels'] is None:
+                    return None
+                if PROJECT_LABEL not in resp['metadata']['labels']:
+                    return None
+                o = cls(resp)
+                if o.state != 'Terminating':  # Only cache if not terminating
+                    cache_client.set('project_' + o.name, o._raw)
+            except ApiException as e:
+                if e.status == 404:
+                    cache_client.delete('project_' + name)
+                    if safe:
+                        return None
+                raise
+        else:
+            o = cls(resp)
 
-    @classmethod
-    def get_by_name(cls, name):
-        objs = cls.list(label_selector=NAME_LABEL + "=" + name)
-        if len(objs) == 0:
-            return None
-        return objs[0]
+        return o
 
     @classmethod
     def list(cls, **kwargs):
+        items = []
+
         if 'label_selector' in kwargs:
             label_selector = kwargs['label_selector']
             if len(label_selector) > 0:
@@ -78,11 +86,16 @@ class Project(object):
                 kwargs['label_selector'] += PROJECT_LABEL
         else:
             kwargs['label_selector'] = PROJECT_LABEL
+
         core_api = client.CoreV1Api()
         raw_list = core_api.list_namespace(**kwargs)
-        items = []
+        pipe = cache_client.pipeline()
         for item in raw_list.items:
-            items.append(cls(item))
+            o = cls(item)
+            items.append(o)
+            if o.state != 'Terminating':  # Only cache if not terminating
+                pipe.set("project_" + o.name, json.dumps(o._raw), ex=cache_client.default_cache_time)
+        pipe.execute()
         return items
 
     @property
@@ -95,23 +108,15 @@ class Project(object):
 
     def delete(self):
         core_api = client.CoreV1Api()
-        core_api.delete_namespace(str(self.id), V1DeleteOptions())
+        core_api.delete_namespace(self._raw['metadata']['name'], V1DeleteOptions())
+        # TODO: Does this cause any side effects since the k8s object isn't deleted right away
+        cache_client.delete('project_' + self.name)
 
     def save(self):
         core_api = client.CoreV1Api()
-        self._raw = core_api.replace_namespace(str(self.id), self._raw)
-
-    def is_member(self, username, driver):
-        label = driver + "." + MEMBER_LABEL + "/" + username
-        return label in self._raw['metadata']['labels']
-
-    def get_member_id(self, username, driver):
-        return self._raw['metadata']['labels'][driver + "." + MEMBER_LABEL + "/" + username]
-
-    def add_member(self, project_member):
-        label = project_member.driver + "." + MEMBER_LABEL + "/" + project_member.username
-        self._raw['metadata']['labels'][label] = str(project_member.id)
-
-    def remove_member(self, project_member):
-        label = project_member.driver + "." + MEMBER_LABEL + "/" + project_member.username
-        del self._raw['metadata']['labels'][label]
+        try:
+            self._raw = core_api.replace_namespace(self._raw['metadata']['name'], self._raw)
+            cache_client.set('project_' + self.name, self._raw)
+        except ApiException:
+            cache_client.delete('project_' + self.name)
+            raise

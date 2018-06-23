@@ -30,8 +30,8 @@ class VMWare(object):
     def get_image(self, vmware_client, image_name, datacenter):
         return self.get_obj(vmware_client, vim.VirtualMachine, image_name, folder=datacenter.vmFolder)
 
-    def get_vm(self, vmware_client, vm_name, datacenter):
-        return self.get_obj(vmware_client, vim.VirtualMachine, vm_name, folder=datacenter.vmFolder)
+    def get_vm(self, vmware_client, vm_uuid, datacenter):
+        return vmware_client.content.searchIndex.FindByUuid(datacenter, vm_uuid, vmSearch=True, instanceUuid=True)
 
     def get_cluster(self, vmware_client, cluster_name, datacenter):
         return self.get_obj(vmware_client, vim.ClusterComputeResource, cluster_name, folder=datacenter.hostFolder)
@@ -61,7 +61,7 @@ class VMWare(object):
         self.wait_for_tasks(vmware_client, [task])
         vStorageObject = task.info.result
 
-        return vStorageObject.config.id.id
+        return vStorageObject.config.name.name
 
     def clone_disk(self, vmware_client, disk_name, disk_id, datastore):
         vStorageManager = vmware_client.RetrieveContent().vStorageObjectManager
@@ -261,7 +261,7 @@ class VMWare(object):
         clonespec.powerOn = False
         clonespec.template = True
 
-        file_name = str(uuid.uuid4())
+        file_name = "sandwich-" + str(uuid.uuid4())
 
         task = vm.Clone(folder=folder, name=file_name, spec=clonespec)
         return task, file_name

@@ -1,7 +1,7 @@
-from deli.kubernetes.resources.model import GlobalResourceModel
+from deli.kubernetes.resources.model import SystemResourceModel
 
 
-class Flavor(GlobalResourceModel):
+class Flavor(SystemResourceModel):
 
     def __init__(self, raw=None):
         super().__init__(raw)

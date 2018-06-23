@@ -7,9 +7,7 @@ RUN apk --no-cache add --virtual build-deps \
     build-base bash linux-headers openssl-dev pcre-dev libffi-dev && \
     pip install uwsgi dumb-init
 
-# COPY tar.gz from build container
 # Install it
-
 COPY dist/. .
 RUN bash -c "pip install *"
 

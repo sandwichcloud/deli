@@ -1,14 +1,15 @@
 import enum
+import json
 import re
 import time
-import uuid
 
 import arrow
 from kubernetes import client
 from kubernetes.client import V1DeleteOptions, V1beta1CustomResourceDefinitionStatus
 from kubernetes.client.rest import ApiException
 
-from deli.kubernetes.resources.const import GROUP, NAME_LABEL, ID_LABEL
+from deli.cache import cache_client
+from deli.kubernetes.resources.const import GROUP, UPDATED_AT_ANNOTATION, NAME_LABEL
 from deli.kubernetes.resources.project import Project
 
 
@@ -25,15 +26,16 @@ class ResourceState(enum.Enum):
 class ResourceModel(object):
     def __init__(self, raw=None):
         if raw is None:
-            id = str(uuid.uuid4())
             raw = {
                 "apiVersion": GROUP + "/" + self.version(),
                 "kind": self.kind(),
                 "metadata": {
-                    "name": id,
+                    "name": '',
                     "labels": {
-                        ID_LABEL: id,
                         NAME_LABEL: ''
+                    },
+                    'annotations': {
+                        UPDATED_AT_ANNOTATION: arrow.now('UTC').isoformat(),
                     },
                     "finalizers": [
                         'delete.sandwichcloud.com'
@@ -48,15 +50,12 @@ class ResourceModel(object):
         self._raw = raw
 
     @property
-    def id(self):
-        return uuid.UUID(self._raw['metadata']['name'])
-
-    @property
     def name(self):
-        return self._raw['metadata']['labels'][NAME_LABEL]
+        return self._raw['metadata']['name']
 
     @name.setter
     def name(self, value):
+        self._raw['metadata']['name'] = value
         self._raw['metadata']['labels'][NAME_LABEL] = value
 
     @property
@@ -84,6 +83,14 @@ class ResourceModel(object):
     @property
     def resource_version(self):
         return self._raw['resourceVersion']
+
+    @property
+    def updated_at(self):
+        return arrow.get(self._raw['metadata']['annotations'][UPDATED_AT_ANNOTATION])
+
+    @updated_at.setter
+    def updated_at(self, value):
+        self._raw['metadata']['annotations'][UPDATED_AT_ANNOTATION] = value.isoformat()
 
     @classmethod
     def name_plural(cls):
@@ -118,7 +125,7 @@ class ResourceModel(object):
             "spec": {
                 "group": GROUP,
                 "version": cls.version(),
-                "scope": "Cluster" if issubclass(cls, GlobalResourceModel) else "Namespaced",
+                "scope": "Cluster" if issubclass(cls, SystemResourceModel) else "Namespaced",
                 "names": {
                     "plural": cls.name_plural(),
                     "singular": cls.name_singular(),
@@ -176,44 +183,50 @@ class ResourceModel(object):
             time.sleep(1)
 
 
-class GlobalResourceModel(ResourceModel):
+class SystemResourceModel(ResourceModel):
+
     def create(self):
         crd_api = client.CustomObjectsApi()
+
         self._raw = crd_api.create_cluster_custom_object(GROUP, self.version(), self.name_plural(), self._raw)
+        cache_client.set(self.name_plural() + "_" + self.name, self._raw)
 
     @classmethod
-    def get(cls, id, safe=True):
-        crd_api = client.CustomObjectsApi()
-        try:
-            resp = crd_api.get_cluster_custom_object(GROUP, cls.version(), cls.name_plural(), str(id))
-            if resp is None:
-                return None
-        except ApiException as e:
-            if e.status == 404 and safe:
-                return None
-            raise
-        return cls(resp)
+    def get(cls, name, safe=True, from_cache=True):
+        resp = None
+        if from_cache:
+            resp = cache_client.get(cls.name_plural() + "_" + name)
+        if resp is None:
+            crd_api = client.CustomObjectsApi()
+            try:
+                resp = crd_api.get_cluster_custom_object(GROUP, cls.version(), cls.name_plural(), name)
+                if resp is None:
+                    return None
+                o = cls(resp)
+                cache_client.set(cls.name_plural() + "_" + o.name, o._raw)
+            except ApiException as e:
+                if e.status == 404:
+                    cache_client.delete(cls.name_plural() + "_" + name)
+                    if safe:
+                        return None
+                raise
+        else:
+            o = cls(resp)
 
-    @classmethod
-    def get_by_name(cls, name, safe=True):
-        try:
-            objs = cls.list(label_selector=NAME_LABEL + "=" + name)
-            if len(objs) == 0:
-                return None
-            return objs[0]
-        except ApiException as e:
-            if e.status == 404 and safe:
-                return None
-            raise
+        return o
 
     def save(self, ignore=False):
         crd_api = client.CustomObjectsApi()
         try:
-            self._raw = crd_api.replace_cluster_custom_object(GROUP, self.version(), self.name_plural(), str(self.id),
+            self.updated_at = arrow.now('UTC')
+            self._raw = crd_api.replace_cluster_custom_object(GROUP, self.version(), self.name_plural(), self.name,
                                                               self._raw)
+            cache_client.set(self.name_plural() + "_" + self.name, self._raw)
         except ApiException as e:
-            if e.status == 409 and ignore:
-                return
+            cache_client.delete(self.name_plural() + "_" + self.name)
+            if e.status == 409:
+                if ignore:
+                    return
             raise e
 
     @classmethod
@@ -222,12 +235,18 @@ class GlobalResourceModel(ResourceModel):
 
     @classmethod
     def list(cls, **kwargs):
+        items = []
+
         crd_api = client.CustomObjectsApi()
         args, sig_kwargs = cls.list_sig()
         raw_list = crd_api.list_cluster_custom_object(*args, **{**sig_kwargs, **kwargs})
-        items = []
+        pipe = cache_client.pipeline()
         for item in raw_list['items']:
-            items.append(cls(item))
+            o = cls(item)
+            items.append(o)
+            pipe.set(cls.name_plural() + "_" + o.name, json.dumps(item), ex=cache_client.default_cache_time)
+        pipe.execute()
+
         return items
 
     def delete(self, force=False):
@@ -235,10 +254,12 @@ class GlobalResourceModel(ResourceModel):
             if 'delete.sandwichcloud.com' in self._raw['metadata']['finalizers']:
                 self._raw['metadata']['finalizers'].remove('delete.sandwichcloud.com')
                 self.save()
+                cache_client.delete(self.name_plural() + "_" + self.name)
             crd_api = client.CustomObjectsApi()
             try:
-                crd_api.delete_cluster_custom_object(GROUP, self.version(), self.name_plural(), str(self.id),
+                crd_api.delete_cluster_custom_object(GROUP, self.version(), self.name_plural(), self.name,
                                                      V1DeleteOptions())
+                cache_client.delete(self.name_plural() + "_" + self.name)
             except ApiException as e:
                 if e.status != 404:
                     raise
@@ -255,59 +276,69 @@ class ProjectResourceModel(ResourceModel):
             self._raw['metadata']['namespace'] = None
 
     @property
-    def project_id(self):
-        return uuid.UUID(self._raw['metadata']['namespace'])
+    def project_name(self):
+        project_name = self._raw['metadata']['namespace']
+        if project_name is None:
+            return None
+
+        return self._raw['metadata']['namespace'].replace("sandwich-", "")
 
     @property
     def project(self):
-        return Project.get(self._raw['metadata']['namespace'])
+        if self.project_name is None:
+            return None
+        return Project.get(self.project_name)
 
     @project.setter
     def project(self, value):
-        self._raw['metadata']['namespace'] = str(value.id)
+        self._raw['metadata']['namespace'] = "sandwich-" + value.name
 
     def create(self):
-        if self.project is None:
+        if self.project_name is None:
             raise ValueError("Project must be set to create %s".format(self.__class__.__name__))
 
         crd_api = client.CustomObjectsApi()
-        self._raw = crd_api.create_namespaced_custom_object(GROUP, self.version(), str(self.project.id),
+        self._raw = crd_api.create_namespaced_custom_object(GROUP, self.version(), "sandwich-" + self.project_name,
                                                             self.name_plural(), self._raw)
+        cache_client.set(self.name_plural() + "_" + self.project_name + "_" + self.name, self._raw)
 
     @classmethod
-    def get(cls, project, id, safe=True):
-        crd_api = client.CustomObjectsApi()
-        try:
-            resp = crd_api.get_namespaced_custom_object(GROUP, cls.version(), str(project.id), cls.name_plural(),
-                                                        str(id))
-            if resp is None:
-                return None
-        except ApiException as e:
-            if e.status == 404 and safe:
-                return None
-            raise
-        return cls(resp)
+    def get(cls, project, name, safe=True, from_cache=True):
+        resp = None
+        if from_cache:
+            resp = cache_client.get(cls.name_plural() + "_" + project.name + "_" + name)
+        if resp is None:
+            crd_api = client.CustomObjectsApi()
+            try:
+                resp = crd_api.get_namespaced_custom_object(GROUP, cls.version(), "sandwich-" + project.name,
+                                                            cls.name_plural(), name)
+                if resp is None:
+                    return None
+                o = cls(resp)
+                cache_client.set(cls.name_plural() + "_" + o.project_name + "_" + o.name, o._raw)
+            except ApiException as e:
+                if e.status == 404:
+                    cache_client.delete(cls.name_plural() + "_" + project.name + "_" + name)
+                    if safe:
+                        return None
+                raise
+        else:
+            o = cls(resp)
 
-    @classmethod
-    def get_by_name(cls, project, name, safe=True):
-        try:
-            objs = cls.list(project, label_selector=NAME_LABEL + "=" + name)
-            if len(objs) == 0:
-                return None
-            return objs[0]
-        except ApiException as e:
-            if e.status == 404 and safe:
-                return None
-            raise
+        return o
 
     def save(self, ignore=False):
         crd_api = client.CustomObjectsApi()
         try:
-            self._raw = crd_api.replace_namespaced_custom_object(GROUP, self.version(), str(self.project.id),
-                                                                 self.name_plural(), str(self.id), self._raw)
+            self.updated_at = arrow.now('UTC')
+            self._raw = crd_api.replace_namespaced_custom_object(GROUP, self.version(), "sandwich-" + self.project_name,
+                                                                 self.name_plural(), self.name, self._raw)
+            cache_client.set(self.name_plural() + "_" + self.project_name + "_" + self.name, self._raw)
         except ApiException as e:
-            if e.status == 409 and ignore:
-                return
+            cache_client.delete(self.name_plural() + "_" + self.project.name + "_" + self.name)
+            if e.status == 409:
+                if ignore:
+                    return
             raise e
 
     @classmethod
@@ -316,24 +347,38 @@ class ProjectResourceModel(ResourceModel):
 
     @classmethod
     def list_all(cls, **kwargs):
+        items = []
+
         crd_api = client.CustomObjectsApi()
         args, sig_kwargs = cls.list_sig()
         # We use this to query all namespaces
         raw_list = crd_api.list_cluster_custom_object(*args, **{**sig_kwargs, **kwargs})
-        items = []
+        pipe = cache_client.pipeline()
         for item in raw_list['items']:
-            items.append(cls(item))
+            o = cls(item)
+            items.append(o)
+            pipe.set(cls.name_plural() + "_" + o.project_name + "_" + o.name, json.dumps(item),
+                     ex=cache_client.default_cache_time)
+        pipe.execute()
+
         return items
 
     @classmethod
     def list(cls, project, **kwargs):
+        items = []
+
         crd_api = client.CustomObjectsApi()
         args, sig_kwargs = cls.list_sig()
-        args.append(str(project.id))
+        args.append("sandwich-" + project.name)
         raw_list = crd_api.list_namespaced_custom_object(*args, **{**sig_kwargs, **kwargs})
-        items = []
+        pipe = cache_client.pipeline()
         for item in raw_list['items']:
-            items.append(cls(item))
+            o = cls(item)
+            items.append(o)
+            pipe.set(cls.name_plural() + "_" + project.name + "_" + o.name, json.dumps(item),
+                     ex=cache_client.default_cache_time)
+        pipe.execute()
+
         return items
 
     def delete(self, force=False):
@@ -341,11 +386,14 @@ class ProjectResourceModel(ResourceModel):
             if 'delete.sandwichcloud.com' in self._raw['metadata']['finalizers']:
                 self._raw['metadata']['finalizers'].remove('delete.sandwichcloud.com')
                 self.save()
+                cache_client.delete(self.name_plural() + "_" + self.project.name + "_" + self.name)
             crd_api = client.CustomObjectsApi()
             try:
-                crd_api.delete_namespaced_custom_object(GROUP, self.version(), str(self.project.id),
-                                                        self.name_plural(), str(self.id), V1DeleteOptions())
+                crd_api.delete_namespaced_custom_object(GROUP, self.version(), "sandwich-" + self.project.name,
+                                                        self.name_plural(), self.name, V1DeleteOptions())
+                cache_client.delete(self.name_plural() + "_" + self.project.name + "_" + self.name)
             except ApiException as e:
+                cache_client.delete(self.name_plural() + "_" + self.project.name + "_" + self.name)
                 if e.status != 404:
                     raise
         else:

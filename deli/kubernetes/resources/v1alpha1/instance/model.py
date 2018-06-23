@@ -2,14 +2,14 @@ import enum
 import uuid
 
 from deli.kubernetes.resources.const import TAG_LABEL, REGION_LABEL, ZONE_LABEL, IMAGE_LABEL, NETWORK_LABEL, \
-    NETWORK_PORT_LABEL, SERVICE_ACCOUNT_LABEL
+    NETWORK_PORT_LABEL, SERVICE_ACCOUNT_LABEL, VM_ID_LABEL
 from deli.kubernetes.resources.model import ProjectResourceModel
 from deli.kubernetes.resources.v1alpha1.flavor.model import Flavor
-from deli.kubernetes.resources.v1alpha1.image.model import Image
+from deli.kubernetes.resources.v1alpha1.iam_service_account.model import ProjectServiceAccount
+from deli.kubernetes.resources.v1alpha1.image.model import Image, ImageTask
 from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
 from deli.kubernetes.resources.v1alpha1.network.model import NetworkPort
 from deli.kubernetes.resources.v1alpha1.region.model import Region
-from deli.kubernetes.resources.v1alpha1.service_account.model import ProjectServiceAccount
 from deli.kubernetes.resources.v1alpha1.zone.model import Zone
 
 
@@ -37,9 +37,10 @@ class Instance(ProjectResourceModel):
             self._raw['metadata']['labels'][NETWORK_LABEL] = ''
             self._raw['metadata']['labels'][NETWORK_PORT_LABEL] = ''
             self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL] = ''
+            self._raw['metadata']['labels'][VM_ID_LABEL] = ''
             self._raw['spec'] = {
                 'flavor': {
-                    'id': None,
+                    'name': None,
                     'vcpus': 1,
                     'ram': 1024,
                     'disk': 20,
@@ -54,7 +55,7 @@ class Instance(ProjectResourceModel):
                 ],
             }
             self._raw['status']['initialVolumes'] = [
-                # UUID of volumes with index matched to spec initialVolumes
+                # name of volumes with index matched to spec initialVolumes
             ]
             self._raw['status']['task'] = {
                 'name': None,
@@ -65,95 +66,105 @@ class Instance(ProjectResourceModel):
             }
 
     @property
-    def region_id(self):
-        region_id = self._raw['metadata']['labels'][REGION_LABEL]
-        if region_id == "":
+    def vm_id(self):
+        if len(self._raw['metadata']['labels'][VM_ID_LABEL]) > 0:
+            return uuid.UUID(self._raw['metadata']['labels'][VM_ID_LABEL])
+        return None
+
+    @vm_id.setter
+    def vm_id(self, value):
+        self._raw['metadata']['labels'][VM_ID_LABEL] = str(value)
+
+    @property
+    def region_name(self):
+        region_name = self._raw['metadata']['labels'][REGION_LABEL]
+        if region_name == "":
             return None
-        return uuid.UUID(region_id)
+        return region_name
 
     @property
     def region(self):
-        region_id = self.region_id
-        if region_id is None:
+        region_name = self.region_name
+        if region_name is None:
             return None
-        return Region.get(region_id)
+        return Region.get(region_name)
 
     @region.setter
     def region(self, value):
-        self._raw['metadata']['labels'][REGION_LABEL] = str(value.id)
+        self._raw['metadata']['labels'][REGION_LABEL] = str(value.name)
 
     @property
-    def zone_id(self):
-        zone_id = self._raw['metadata']['labels'][ZONE_LABEL]
-        if zone_id == "":
+    def zone_name(self):
+        zone_name = self._raw['metadata']['labels'][ZONE_LABEL]
+        if zone_name == "":
             return None
-        return uuid.UUID(zone_id)
+        return zone_name
 
     @property
     def zone(self):
-        zone_id = self.zone_id
-        if zone_id is None:
+        zone_name = self.zone_name
+        if zone_name is None:
             return None
-        return Zone.get(zone_id)
+        return Zone.get(zone_name)
 
     @zone.setter
     def zone(self, value):
-        self._raw['metadata']['labels'][ZONE_LABEL] = str(value.id)
+        self._raw['metadata']['labels'][ZONE_LABEL] = str(value.name)
 
     @property
-    def image_id(self):
-        image_id = self._raw['metadata']['labels'][IMAGE_LABEL]
-        if image_id == "":
+    def image_name(self):
+        image_name = self._raw['metadata']['labels'][IMAGE_LABEL]
+        if image_name == "":
             return None
-        return uuid.UUID(image_id)
+        return image_name
 
     @property
     def image(self):
-        image_id = self.image_id
-        if image_id is None:
+        image_name = self.image_name
+        if image_name is None:
             return None
-        return Image.get(image_id)
+        return Image.get(self.project, image_name)
 
     @image.setter
     def image(self, value):
-        self._raw['metadata']['labels'][IMAGE_LABEL] = str(value.id)
+        self._raw['metadata']['labels'][IMAGE_LABEL] = str(value.name)
 
     @property
     def network_port_id(self):
-        network_port_id = self._raw['metadata']['labels'][NETWORK_PORT_LABEL]
-        if network_port_id == "":
+        network_port_name = self._raw['metadata']['labels'][NETWORK_PORT_LABEL]
+        if network_port_name == "":
             return None
-        return uuid.UUID(network_port_id)
+        return network_port_name
 
     @property
     def network_port(self):
-        network_port_id = self.network_port_id
-        if network_port_id is None:
+        network_port_name = self.network_port_id
+        if network_port_name is None:
             return None
-        return NetworkPort.get(self.project, network_port_id)
+        return NetworkPort.get(self.project, network_port_name)
 
     @network_port.setter
     def network_port(self, value):
-        self._raw['metadata']['labels'][NETWORK_LABEL] = str(value.network.id)
-        self._raw['metadata']['labels'][NETWORK_PORT_LABEL] = str(value.id)
+        self._raw['metadata']['labels'][NETWORK_LABEL] = str(value.network.name)
+        self._raw['metadata']['labels'][NETWORK_PORT_LABEL] = str(value.name)
 
     @property
-    def service_account_id(self):
-        service_account_id = self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL]
-        if service_account_id == "":
+    def service_account_name(self):
+        service_account_name = self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL]
+        if service_account_name == "":
             return None
-        return uuid.UUID(service_account_id)
+        return service_account_name
 
     @property
     def service_account(self):
-        service_account_id = self.service_account_id
-        if service_account_id is None:
+        service_account_name = self.service_account_name
+        if service_account_name is None:
             return None
-        return ProjectServiceAccount.get(self.project, service_account_id)
+        return ProjectServiceAccount.get(self.project, service_account_name)
 
     @service_account.setter
     def service_account(self, value):
-        self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL] = str(value.id)
+        self._raw['metadata']['labels'][SERVICE_ACCOUNT_LABEL] = str(value.name)
 
     @property
     def user_data(self):
@@ -209,20 +220,20 @@ class Instance(ProjectResourceModel):
         del self._raw['metadata']['labels'][TAG_LABEL + '/' + tag]
 
     @property
-    def flavor_id(self):
-        if self._raw['spec']['flavor']['id'] is None:
+    def flavor_name(self):
+        if self._raw['spec']['flavor']['name'] is None:
             return None
-        return uuid.UUID(self._raw['spec']['flavor']['id'])
+        return self._raw['spec']['flavor']['name']
 
     @property
     def flavor(self):
-        if self._raw['spec']['flavor']['id'] is None:
+        if self._raw['spec']['flavor']['name'] is None:
             return None
-        return Flavor.get(self._raw['spec']['flavor']['id'])
+        return Flavor.get(self._raw['spec']['flavor']['name'])
 
     @flavor.setter
     def flavor(self, value):
-        self._raw['spec']['flavor']['id'] = str(value.id)
+        self._raw['spec']['flavor']['name'] = value.name
         self.vcpus = value.vcpus
         self.ram = value.ram
         self.disk = value.disk
@@ -252,17 +263,17 @@ class Instance(ProjectResourceModel):
         self._raw['spec']['flavor']['disk'] = value
 
     @property
-    def keypair_ids(self):
-        keypair_ids = []
-        for keypair_id in self._raw['spec']['keypairs']:
-            keypair_ids.append(uuid.UUID(keypair_id))
-        return keypair_ids
+    def keypair_names(self):
+        keypair_names = []
+        for keypair_name in self._raw['spec']['keypairs']:
+            keypair_names.append(keypair_name)
+        return keypair_names
 
     @property
     def keypairs(self):
         keypairs = []
-        for keypair_id in self._raw['spec']['keypairs']:
-            keypair = Keypair.get(self.project, keypair_id)
+        for keypair_name in self._raw['spec']['keypairs']:
+            keypair = Keypair.get(self.project, keypair_name)
             if keypair is not None:
                 keypairs.append(keypair)
         return keypairs
@@ -270,7 +281,7 @@ class Instance(ProjectResourceModel):
     @keypairs.setter
     def keypairs(self, value):
         for keypair in value:
-            self._raw['spec']['keypairs'].append(str(keypair.id))
+            self._raw['spec']['keypairs'].append(str(keypair.name))
 
     def action_start(self):
         self.task = VMTask.STARTING
@@ -298,11 +309,15 @@ class Instance(ProjectResourceModel):
         image.region = self.region
         image.name = image_name
         image.file_name = None
+        image.task = ImageTask.IMAGING_INSTANCE
+        image.task_kwargs = {
+            'instance_name': self.name
+        }
         image.create()
 
         self.task = VMTask.IMAGING
         self.task_kwargs = {
-            'image_id': str(image.id)
+            'image_name': image.name
         }
         self.save()
 

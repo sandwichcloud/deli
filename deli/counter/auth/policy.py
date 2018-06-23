@@ -1,107 +1,38 @@
-POLICIES = [
-    # Policies
-    {
-        "name": "policies:get",
-        "description": "Ability to get a policy",
-
-    },
-    {
-        "name": "policies:list",
-        "description": "Ability to list policies",
-    },
-
+SYSTEM_POLICIES = [
     # Roles
     {
-        "name": "roles:global:create",
-        "description": "Ability to create a global role"
+        "name": "roles:system:create",
+        "description": "Ability to create a system role"
     },
     {
-        "name": "roles:project:create",
-        "description": "Ability to create a project role",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
+        "name": "roles:system:get",
+        "description": "Ability to get a system role",
     },
     {
-        "name": "roles:global:get",
-        "description": "Ability to get a global role",
+        "name": "roles:system:list",
+        "description": "Ability to list system roles",
     },
     {
-        "name": "roles:project:get",
-        "description": "Ability to get a project role",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
+        "name": "roles:system:update",
+        "description": "Ability to update a system role",
     },
     {
-        "name": "roles:global:list",
-        "description": "Ability to list global roles",
+        "name": "roles:system:delete",
+        "description": "Ability to delete a system role"
     },
-    {
-        "name": "roles:project:list",
-        "description": "Ability to list project roles",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "roles:global:update",
-        "description": "Ability to update a global role",
-    },
-    {
-        "name": "roles:project:update",
-        "description": "Ability to update a project role",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "roles:global:delete",
-        "description": "Ability to delete a global role"
-    },
-    {
-        "name": "roles:project:delete",
-        "description": "Ability to delete a project role",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-
     # Flavors
     {
         "name": "flavors:create",
         "description": "Ability to create a flavor",
     },
     {
-        "name": "flavors:get",
-        "description": "Ability to get a flavor",
-    },
-    {
-        "name": "flavors:list",
-        "description": "Ability to list flavors",
-    },
-    {
         "name": "flavors:delete",
         "description": "Ability to delete a flavor",
     },
-
     # Regions
     {
         "name": "regions:create",
         "description": "Ability to create a region"
-    },
-    {
-        "name": "regions:get",
-        "description": "Ability to get a region",
-    },
-    {
-        "name": "regions:list",
-        "description": "Ability to list regions",
     },
     {
         "name": "regions:delete",
@@ -111,19 +42,10 @@ POLICIES = [
         "name": "regions:action:schedule",
         "description": "Ability to change the schedule mode of the region"
     },
-
     # Zones
     {
         "name": "zones:create",
         "description": "Ability to create a zone"
-    },
-    {
-        "name": "zones:get",
-        "description": "Ability to get a zone",
-    },
-    {
-        "name": "zones:list",
-        "description": "Ability to list zones",
     },
     {
         "name": "zones:delete",
@@ -133,394 +55,308 @@ POLICIES = [
         "name": "zones:action:schedule",
         "description": "Ability to change the schedule mode of the zone"
     },
-
-    # Projects
-    {
-        "name": "projects:create",
-        "description": "Ability to create a project"
-    },
-    {
-        "name": "projects:get",
-        "description": "Ability to get a project",
-    },
-    {
-        "name": "projects:get:all",
-        "description": "Ability to get all projects"
-    },
-    {
-        "name": "projects:list",
-        "description": "Ability to list projects",
-    },
-    {
-        "name": "projects:list:all",
-        "description": "Ability to list all projects"
-    },
-    {
-        "name": "projects:delete",
-        "description": "Ability to delete a project"
-    },
-    {
-        "name": "projects:scope",
-        "description": "Ability to scope to projects"
-    },
-    {
-        "name": "projects:scope:all",
-        "description": "Ability to scope to all projects"
-    },
-    {
-        "name": "projects:members:add",
-        "description": "Ability to add a member to a project",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "projects:members:get",
-        "description": "Ability to get a member in a project",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "projects:members:list",
-        "description": "Ability to list members in a project",
-        "tags": [
-            "project",
-            "default_project_member",
-            "default_service_account"
-        ]
-    },
-    {
-        "name": "projects:members:modify",
-        "description": "Ability to modify a project member's roles",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "projects:members:remove",
-        "description": "Ability to remove a member from a project",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "projects:quota:get",
-        "description": "Ability to get a project's quota",
-        "tags": [
-            "project",
-            "default_project_member",
-            "default_service_account"
-        ]
-    },
-    {
-        "name": "projects:quota:modify",
-        "description": "Ability to modify a project's quota",
-    },
-    # Volumes
-    {
-        "name": "volumes:create",
-        "description": "Ability to create a volume",
-        "tags": [
-            "project",
-            "default_project_member",
-        ]
-    },
-    {
-        "name": "volumes:get",
-        "description": "Ability to get a volume",
-        "tags": [
-            "project",
-            "default_project_member",
-            "default_service_account"
-        ]
-    },
-    {
-        "name": "volumes:list",
-        "description": "Ability to list volumes",
-        "tags": [
-            "project",
-            "default_project_member",
-            "default_service_account"
-        ]
-    },
-    {
-        "name": "volumes:delete",
-        "description": "Ability to delete a volume",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "volumes:action:attach",
-        "description": "Ability to attach a volume to an instance",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "volumes:action:detach",
-        "description": "Ability to detach a volume from an instance",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "volumes:action:grow",
-        "description": "Ability to grow a volume",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "volumes:action:clone",
-        "description": "Ability to clone a volume",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-
-    # Images
-    {
-        "name": "images:create",
-        "description": "Ability to create an image"
-    },
-    {
-        "name": "images:get",
-        "description": "Ability to get an image",
-        "tags": [
-            "project",
-            "default_project_member",
-            "default_service_account"
-        ]
-    },
-    {
-        "name": "images:list",
-        "description": "Ability to list images",
-        "tags": [
-            "project",
-            "default_project_member",
-            "default_service_account"
-        ]
-    },
-    {
-        "name": "images:delete",
-        "description": "Ability to delete an image",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "images:action:visibility",
-        "description": "Ability to change the image visibility",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "images:action:visibility:public",
-        "description": "Ability to change the image visibility to public"
-    },
-    {
-        "name": "images:action:lock",
-        "description": "Ability to lock an image",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "images:action:unlock",
-        "description": "Ability to unlock an image",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "images:members:add",
-        "description": "Ability to add a member to an image",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "images:members:list",
-        "description": "Ability to list image members",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "images:members:delete",
-        "description": "Ability to delete a member from an image",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-
-    # Instances
-    {
-        "name": "instances:create",
-        "description": "Ability to create an instance",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "instances:get",
-        "description": "Ability to get an instance",
-        "tags": [
-            "project",
-            "default_project_member",
-            "default_service_account"
-        ]
-    },
-    {
-        "name": "instances:list",
-        "description": "Ability to list instances",
-        "tags": [
-            "project",
-            "default_project_member",
-            "default_service_account"
-        ]
-    },
-    {
-        "name": "instances:delete",
-        "description": "Ability to delete an instance",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "instances:action:stop",
-        "description": "Ability to stop an instance",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "instances:action:start",
-        "description": "Ability to start an instance",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "instances:action:restart",
-        "description": "Ability to restart an instance",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-    {
-        "name": "instances:action:image",
-        "description": "Ability to create an image from an instance",
-        "tags": [
-            "project",
-            "default_project_member"
-        ]
-    },
-
     # Networks
     {
         "name": "networks:create",
         "description": "Ability to create a network"
     },
     {
-        "name": "networks:get",
-        "description": "Ability to get a network",
-    },
-    {
-        "name": "networks:list",
-        "description": "Ability to list networks",
-    },
-    {
         "name": "networks:delete",
         "description": "Ability to delete a network"
     },
-
+    # Projects
+    {
+        "name": "projects:create",
+        "description": "Ability to create a project"
+    },
+    {
+        "name": "projects:quota:modify",
+        "description": "Ability to modify a project's quota",
+    },
     # Service Accounts
     {
-        "name": "service_accounts:global:create",
-        "description": "Ability to create a global service account"
+        "name": "service_accounts:system:create",
+        "description": "Ability to create a system service account"
     },
     {
-        "name": "service_accounts:global:get",
-        "description": "Ability to get a global service account"
+        "name": "service_accounts:system:get",
+        "description": "Ability to get a system service account"
     },
     {
-        "name": "service_accounts:global:list",
-        "description": "Ability to list global service accounts"
+        "name": "service_accounts:system:list",
+        "description": "Ability to list system service accounts"
     },
     {
-        "name": "service_accounts:global:update",
-        "description": "Ability to update a global service account"
+        "name": "service_accounts:system:update",
+        "description": "Ability to update a system service account"
     },
 
     {
-        "name": "service_accounts:global:delete",
-        "description": "Ability to delete a global service account"
+        "name": "service_accounts:system:delete",
+        "description": "Ability to delete a system service account"
     },
     {
-        "name": "service_accounts:global:key:create",
-        "description": "Ability to create keys for global service accounts"
+        "name": "service_accounts:system:key:create",
+        "description": "Ability to create keys for system service accounts"
     },
     {
-        "name": "service_accounts:global:key:delete",
-        "description": "Ability to delete keys from global service accounts"
+        "name": "service_accounts:system:key:delete",
+        "description": "Ability to delete keys from system service accounts"
     },
+]
+
+PROJECT_POLICIES = [
+    # Project
+    {
+        "name": "projects:get",
+        "description": "Ability to get a project",
+        "tags": [
+            'viewer',
+            'editor'
+        ]
+    },
+    {
+        "name": "projects:delete",
+        "description": "Ability to delete a project"
+    },
+    {
+        "name": "projects:quota:get",
+        "description": "Ability to get a project's quota",
+        "tags": [
+            'viewer',
+            'editor'
+        ]
+    },
+    # Roles
+    {
+        "name": "roles:project:create",
+        "description": "Ability to create a project role",
+        "tags": [
+            'editor'
+        ]
+    },
+    {
+        "name": "roles:project:get",
+        "description": "Ability to get a project role",
+        "tags": [
+            'viewer',
+            'editor'
+        ]
+    },
+    {
+        "name": "roles:project:list",
+        "description": "Ability to list project roles",
+        "tags": [
+            'viewer',
+            'editor'
+        ]
+    },
+    {
+        "name": "roles:project:update",
+        "description": "Ability to update a project role",
+        "tags": [
+            'editor'
+        ]
+    },
+    {
+        "name": "roles:project:delete",
+        "description": "Ability to delete a project role",
+        "tags": [
+            'editor'
+        ]
+    },
+    # Volumes
+    {
+        "name": "volumes:create",
+        "description": "Ability to create a volume",
+        "tags": [
+            'editor'
+        ]
+    },
+    {
+        "name": "volumes:get",
+        "description": "Ability to get a volume",
+        "tags": [
+            'viewer',
+            'editor'
+        ]
+    },
+    {
+        "name": "volumes:list",
+        "description": "Ability to list volumes",
+        "tags": [
+            'viewer',
+            'editor'
+        ]
+    },
+    {
+        "name": "volumes:delete",
+        "description": "Ability to delete a volume",
+        "tags": [
+            'editor'
+        ]
+    },
+    {
+        "name": "volumes:action:attach",
+        "description": "Ability to attach a volume to an instance",
+        "tags": [
+            'editor'
+        ]
+    },
+    {
+        "name": "volumes:action:detach",
+        "description": "Ability to detach a volume from an instance",
+        "tags": [
+            'editor'
+        ]
+    },
+    {
+        "name": "volumes:action:grow",
+        "description": "Ability to grow a volume",
+        "tags": [
+            'editor'
+        ]
+    },
+    {
+        "name": "volumes:action:clone",
+        "description": "Ability to clone a volume",
+        "tags": [
+            'editor'
+        ]
+    },
+    # Images
+    {
+        "name": "images:create",
+        "description": "Ability to create an image",
+        "tags": [
+            'editor'
+        ]
+    },
+    {
+        "name": "images:get",
+        "description": "Ability to get an image",
+        "tags": [
+            'viewer',
+            'editor'
+        ]
+    },
+    {
+        "name": "images:list",
+        "description": "Ability to list images",
+        "tags": [
+            'viewer',
+            'editor'
+        ]
+    },
+    {
+        "name": "images:delete",
+        "description": "Ability to delete an image",
+        "tags": [
+            'editor'
+        ]
+    },
+    {
+        "name": "images:action:lock",
+        "description": "Ability to lock an image",
+        "tags": [
+            'editor'
+        ]
+    },
+    {
+        "name": "images:action:unlock",
+        "description": "Ability to unlock an image",
+        "tags": [
+            'editor'
+        ]
+    },
+    # Instances
+    {
+        "name": "instances:create",
+        "description": "Ability to create an instance",
+        "tags": [
+            'editor'
+        ]
+    },
+    {
+        "name": "instances:get",
+        "description": "Ability to get an instance",
+        "tags": [
+            'viewer',
+            'editor'
+        ]
+    },
+    {
+        "name": "instances:list",
+        "description": "Ability to list instances",
+        "tags": [
+            'viewer',
+            'editor'
+        ]
+    },
+    {
+        "name": "instances:delete",
+        "description": "Ability to delete an instance",
+        "tags": [
+            'editor'
+        ]
+    },
+    {
+        "name": "instances:action:stop",
+        "description": "Ability to stop an instance",
+        "tags": [
+            'editor'
+        ]
+    },
+    {
+        "name": "instances:action:start",
+        "description": "Ability to start an instance",
+        "tags": [
+            'editor'
+        ]
+    },
+    {
+        "name": "instances:action:restart",
+        "description": "Ability to restart an instance",
+        "tags": [
+            'editor'
+        ]
+    },
+    {
+        "name": "instances:action:image",
+        "description": "Ability to create an image from an instance",
+        "tags": [
+            'editor'
+        ]
+    },
+    # Service Accounts
     {
         "name": "service_accounts:project:create",
         "description": "Ability to create a project service account",
         "tags": [
-            "project",
-            "default_project_member"
+            'editor'
         ]
     },
     {
         "name": "service_accounts:project:get",
         "description": "Ability to get a project service account",
         "tags": [
-            "project",
-            "default_project_member",
-            "default_service_account"
+            'viewer',
+            'editor'
         ]
     },
     {
         "name": "service_accounts:project:list",
         "description": "Ability to list project service accounts",
         "tags": [
-            "project",
-            "default_project_member",
-            "default_service_account"
+            'viewer',
+            'editor'
         ]
     },
     {
         "name": "service_accounts:project:update",
         "description": "Ability to update a project service account",
         "tags": [
-            "project",
-            "default_project_member"
+            'editor'
         ]
     },
 
@@ -528,113 +364,76 @@ POLICIES = [
         "name": "service_accounts:project:delete",
         "description": "Ability to delete a project service account",
         "tags": [
-            "project",
-            "default_project_member"
+            'editor'
         ]
     },
     {
         "name": "service_accounts:project:key:create",
         "description": "Ability to create keys for project service accounts",
         "tags": [
-            "project",
-            "default_project_member"
+            'editor'
         ]
     },
     {
         "name": "service_accounts:project:key:delete",
         "description": "Ability to delete keys from project service accounts",
         "tags": [
-            "project",
-            "default_project_member"
+            'editor'
         ]
     },
-
     # Keypairs
     {
         "name": "keypairs:create",
         "description": "Ability to create a keypair",
         "tags": [
-            "project",
-            "default_project_member"
+            'editor'
         ]
     },
     {
         "name": "keypairs:get",
         "description": "Ability to get a keypair",
         "tags": [
-            "project",
-            "default_project_member",
-            "default_service_account"
+            'viewer',
+            'editor'
         ]
     },
     {
         "name": "keypairs:list",
         "description": "Ability to list keypairs",
         "tags": [
-            "project",
-            "default_project_member",
-            "default_service_account"
+            'viewer',
+            'editor'
         ]
     },
     {
         "name": "keypairs:delete",
         "description": "Ability to delete a keypair",
         "tags": [
-            "project",
-            "default_project_member"
+            'editor'
         ]
     },
-
     # Network Ports
     {
         "name": "network_ports:get",
         "description": "Ability to get a network port",
         "tags": [
-            "project",
-            "default_project_member",
-            "default_service_account"
+            'viewer',
+            'editor'
         ]
     },
     {
         "name": "network_ports:list",
         "description": "Ability to list  network ports",
         "tags": [
-            "project",
-            "default_project_member",
-            "default_service_account"
+            'viewer',
+            'editor'
         ]
     },
     {
         "name": "network_ports:delete",
         "description": "Ability to delete a network port",
         "tags": [
-            "project",
-            "default_project_member"
+            'editor'
         ]
     },
-
-    # Database Users
-    {
-        "name": "database:users:create",
-        "description": "Ability to create users",
-    },
-    {
-        "name": "database:users:get",
-        "description": "Ability to get a user"
-    },
-    {
-        "name": "database:users:list",
-        "description": "Ability to list users"
-    },
-    {
-        "name": "database:users:delete",
-        "description": "Ability to delete a user"
-    },
-    {
-        "name": "database:users:password",
-        "description": "Ability to change a user's password"
-    },
-    {
-        "name": "database:users:roles:update",
-        "description": "Ability to update a user's roles"
-    }]
+]

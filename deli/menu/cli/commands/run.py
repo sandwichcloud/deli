@@ -9,12 +9,14 @@ import uuid
 
 import arrow
 import urllib3
-from clify.daemon import Daemon
 from dotenv import load_dotenv
 from kubernetes import config, client
 from kubernetes.client import Configuration
+from vmw_cloudinit_metadata.cli.commands.run import RunMetadata
+from vmw_cloudinit_metadata.vspc.server import VSPCServer
 
-from deli.menu.vspc.server import VSPCServer
+from deli.cache import cache_client
+from deli.menu.metadata.driver import SandwichDriver
 
 
 class EnvDefault(argparse.Action):
@@ -35,10 +37,7 @@ class EnvDefault(argparse.Action):
         setattr(namespace, self.dest, values)
 
 
-class RunMetadata(Daemon):
-    def __init__(self):
-        super().__init__('run', 'Run the Sandwich Cloud Metadata Server')
-        self.vspc_server = None
+class RunMetadataMenu(RunMetadata):
 
     def setup_arguments(self, parser):
         load_dotenv(os.path.join(os.getcwd(), '.env'))
@@ -46,41 +45,35 @@ class RunMetadata(Daemon):
                             help="Path to a kubeconfig. Only required if out-of-cluster.")
         parser.add_argument('--kube-master', action=EnvDefault, envvar="KUBEMASTER", required=False, default="",
                             help="The address of the Kubernetes API server (overrides any value in kubeconfig)")
-        parser.add_argument('--out-of-band', action=EnvDefault, envvar="OUT_OF_BAND", required=False, default=None,
-                            help="Path to .yaml (.yml) files to use for metadata")
         parser.add_argument("--fernet-key", action=EnvDefault, envvar="FERNET_KEY", required=True,
                             help="The fernet key to use to hand out tokens.")
+        parser.add_argument("--redis-url", action=EnvDefault, envvar="REDIS_URL", required=True,
+                            help="URL to the redis server for caching")
 
     def run(self, args) -> int:
+        cache_client.connect(url=args.redis_url)
 
-        if hasattr(args, "out_of_band"):
-            self.logger.info("Using out of band configuration for metadata")
-            if os.path.isdir(args.out_of_band) is False:
-                self.logger.error("Could not find directory for out of band configuration " + args.out_of_band)
-                return 1
-            os.environ['OUT_OF_BAND'] = args.out_of_band
+        self.logger.info("Using Kubernetes configuration for metadata")
+        if args.kube_config != "" or args.kube_master != "":
+            self.logger.info("Using kube-config configuration")
+            Configuration.set_default(Configuration())
+            if args.kube_config != "":
+                config.load_kube_config(config_file=args.kube_config)
+            if args.kube_master != "":
+                Configuration._default.host = args.kube_master
+
         else:
-            self.logger.info("Using Kubernetes configuration for metadata")
-            if args.kube_config != "" or args.kube_master != "":
-                self.logger.info("Using kube-config configuration")
-                Configuration.set_default(Configuration())
-                if args.kube_config != "":
-                    config.load_kube_config(config_file=args.kube_config)
-                if args.kube_master != "":
-                    Configuration._default.host = args.kube_master
+            self.logger.info("Using in-cluster configuration")
+            config.load_incluster_config()
 
-            else:
-                self.logger.info("Using in-cluster configuration")
-                config.load_incluster_config()
-
-            while True:
-                try:
-                    client.CoreV1Api().list_namespace()
-                    break
-                except urllib3.exceptions.HTTPError as e:
-                    self.logger.error(
-                        "Error connecting to the Kubernetes API. Trying again in 5 seconds. Error: " + str(e))
-                    time.sleep(5)
+        while True:
+            try:
+                client.CoreV1Api().list_namespace()
+                break
+            except urllib3.exceptions.HTTPError as e:
+                self.logger.error(
+                    "Error connecting to the Kubernetes API. Trying again in 5 seconds. Error: " + str(e))
+                time.sleep(5)
 
         os.environ['FERNET_KEY'] = args.fernet_key
 
@@ -102,12 +95,6 @@ class RunMetadata(Daemon):
 
         json.JSONEncoder.default = json_encoder
 
-        self.vspc_server = VSPCServer('sandwich')
+        self.vspc_server = VSPCServer("sandwich", SandwichDriver({}))
         self.vspc_server.start()
-
         return 0
-
-    def on_shutdown(self, signum=None, frame=None):
-        self.logger.info("Shutting down the Metadata Server")
-        if self.vspc_server is not None:
-            self.vspc_server.stop()

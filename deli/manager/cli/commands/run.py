@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import enum
 import ipaddress
 import json
@@ -16,8 +17,16 @@ from k8scontroller.election.elector import LeaderElector
 from kubernetes import config, client
 from kubernetes.client import Configuration
 
+from deli.cache import cache_client
 from deli.kubernetes.resources.v1alpha1.flavor.controller import FlavorController
 from deli.kubernetes.resources.v1alpha1.flavor.model import Flavor
+from deli.kubernetes.resources.v1alpha1.iam_policy.controller import IAMPolicyController
+from deli.kubernetes.resources.v1alpha1.iam_policy.model import IAMPolicy
+from deli.kubernetes.resources.v1alpha1.iam_role.controller import IAMSystemRoleController, IAMProjectRoleController
+from deli.kubernetes.resources.v1alpha1.iam_role.model import IAMSystemRole, IAMProjectRole
+from deli.kubernetes.resources.v1alpha1.iam_service_account.controller import SystemServiceAccountController, \
+    ProjectServiceAccountController
+from deli.kubernetes.resources.v1alpha1.iam_service_account.model import SystemServiceAccount, ProjectServiceAccount
 from deli.kubernetes.resources.v1alpha1.image.controller import ImageController
 from deli.kubernetes.resources.v1alpha1.image.model import Image
 from deli.kubernetes.resources.v1alpha1.instance.controller import InstanceController
@@ -26,17 +35,10 @@ from deli.kubernetes.resources.v1alpha1.keypair.controller import KeypairControl
 from deli.kubernetes.resources.v1alpha1.keypair.keypair import Keypair
 from deli.kubernetes.resources.v1alpha1.network.controller import NetworkController, NetworkPortController
 from deli.kubernetes.resources.v1alpha1.network.model import Network, NetworkPort
-from deli.kubernetes.resources.v1alpha1.project_member.controller import ProjectMemberController
-from deli.kubernetes.resources.v1alpha1.project_member.model import ProjectMember
 from deli.kubernetes.resources.v1alpha1.project_quota.controller import ProjectQuotaController
 from deli.kubernetes.resources.v1alpha1.project_quota.model import ProjectQuota
 from deli.kubernetes.resources.v1alpha1.region.controller import RegionController
 from deli.kubernetes.resources.v1alpha1.region.model import Region
-from deli.kubernetes.resources.v1alpha1.role.controller import GlobalRoleController, ProjectRoleController
-from deli.kubernetes.resources.v1alpha1.role.model import GlobalRole, ProjectRole
-from deli.kubernetes.resources.v1alpha1.service_account.controller import GlobalServiceAccountController, \
-    ProjectServiceAccountController
-from deli.kubernetes.resources.v1alpha1.service_account.model import GlobalServiceAccount, ProjectServiceAccount
 from deli.kubernetes.resources.v1alpha1.volume.controller import VolumeController
 from deli.kubernetes.resources.v1alpha1.volume.model import Volume
 from deli.kubernetes.resources.v1alpha1.zone.controller import ZoneController
@@ -92,7 +94,12 @@ class RunManager(Daemon):
         required_group.add_argument("--menu-url", action=EnvDefault, envvar="MENU_URL", required=True,
                                     help="Telnet URL to the menu server")
 
+        required_group.add_argument("--redis-url", action=EnvDefault, envvar="REDIS_URL", required=True,
+                                    help="URL to the redis server for caching")
+
     def run(self, args) -> int:
+        cache_client.connect(url=args.redis_url)
+
         if args.kube_config != "" or args.kube_master != "":
             self.logger.info("Using kube-config configuration")
             Configuration.set_default(Configuration())
@@ -126,27 +133,33 @@ class RunManager(Daemon):
                 return str(o)
             if isinstance(o, enum.Enum):
                 return o.value
+            if isinstance(o, datetime.datetime):
+                return str(o.isoformat())
 
             return old_json_encoder(self, o)
 
         json.JSONEncoder.default = json_encoder
 
         self.logger.info("Creating CRDs")
-        GlobalRole.create_crd()
-        GlobalRole.wait_for_crd()
-        GlobalRole.create_default_roles()
-        ProjectRole.create_crd()
-        ProjectRole.wait_for_crd()
-        ProjectMember.create_crd()
-        ProjectMember.wait_for_crd()
-        ProjectQuota.create_crd()
-        ProjectQuota.wait_for_crd()
+        IAMSystemRole.create_crd()
+        IAMSystemRole.wait_for_crd()
+        IAMProjectRole.create_crd()
+        IAMProjectRole.wait_for_crd()
 
-        GlobalServiceAccount.create_crd()
-        GlobalServiceAccount.wait_for_crd()
-        GlobalServiceAccount.create_admin_sa()
+        IAMPolicy.create_crd()
+        IAMPolicy.wait_for_crd()
+        IAMPolicy.create_system_policy()
+
+        SystemServiceAccount.create_crd()
+        SystemServiceAccount.wait_for_crd()
         ProjectServiceAccount.create_crd()
         ProjectServiceAccount.wait_for_crd()
+
+        IAMSystemRole.create_default_roles()
+        SystemServiceAccount.create_admin_sa()
+
+        ProjectQuota.create_crd()
+        ProjectQuota.wait_for_crd()
 
         Region.create_crd()
         Region.wait_for_crd()
@@ -190,14 +203,14 @@ class RunManager(Daemon):
         self.logger.info("Started leading... starting controllers")
         self.launch_controller(RegionController(1, 30, self.vmware))
         self.launch_controller(ZoneController(1, 30, self.vmware))
-        self.launch_controller(GlobalRoleController(1, 30))
-        self.launch_controller(ProjectRoleController(1, 30))
-        self.launch_controller(ProjectMemberController(1, 30))
+        self.launch_controller(IAMSystemRoleController(1, 30))
+        self.launch_controller(IAMProjectRoleController(1, 30))
+        self.launch_controller(IAMPolicyController(1, 30))
         self.launch_controller(ProjectQuotaController(1, 30))
         self.launch_controller(NetworkController(1, 30, self.vmware))
         self.launch_controller(NetworkPortController(1, 30))
         self.launch_controller(ImageController(4, 30, self.vmware))
-        self.launch_controller(GlobalServiceAccountController(1, 30))
+        self.launch_controller(SystemServiceAccountController(1, 30))
         self.launch_controller(ProjectServiceAccountController(1, 30))
         self.launch_controller(FlavorController(1, 30))
         self.launch_controller(VolumeController(4, 30, self.vmware))

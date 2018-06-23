@@ -1,11 +1,9 @@
-import uuid
-
 from deli.kubernetes.resources.const import REGION_LABEL
-from deli.kubernetes.resources.model import GlobalResourceModel
+from deli.kubernetes.resources.model import SystemResourceModel
 from deli.kubernetes.resources.v1alpha1.region.model import Region
 
 
-class Zone(GlobalResourceModel):
+class Zone(SystemResourceModel):
 
     def __init__(self, raw=None):
         super().__init__(raw)
@@ -22,22 +20,22 @@ class Zone(GlobalResourceModel):
             }
 
     @property
-    def region_id(self):
-        region_id = self._raw['metadata']['labels'][REGION_LABEL]
-        if region_id == "":
+    def region_name(self):
+        region_name = self._raw['metadata']['labels'][REGION_LABEL]
+        if region_name == "":
             return None
-        return uuid.UUID(region_id)
+        return region_name
 
     @property
     def region(self):
-        region_id = self.region_id
-        if region_id is None:
+        region_name = self.region_name
+        if region_name is None:
             return None
-        return Region.get(region_id)
+        return Region.get(region_name)
 
     @region.setter
     def region(self, value):
-        self._raw['metadata']['labels'][REGION_LABEL] = str(value.id)
+        self._raw['metadata']['labels'][REGION_LABEL] = value.name
 
     @property
     def vm_cluster(self):
