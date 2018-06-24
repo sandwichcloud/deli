@@ -18,5 +18,5 @@ requests==2.19.1 # Apache 2.0
 python-jose==3.0.0 # MIT
 apispec==0.38.0 # MIT
 pyk8s-controller==0.0.7 # MIT
-ingredients.http==0.0.16 # MIT
+ingredients.http==0.0.17 # MIT
 vmw-cloudinit-metadata==0.0.8 # MIT
