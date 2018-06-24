@@ -62,7 +62,14 @@ class BindingMemberType(StringType):
 
 class PolicyBinding(Model):
     role = KubeName(required=True)
-    members = ListType(BindingMemberType)
+    members = ListType(BindingMemberType, required=True)
+
+    def validate_members(self, data, value):
+        for member in value:
+            if value.count(member) > 1:
+                raise ValidationError(member + " appears multiple times in the binding")
+
+        return value
 
 
 class ResponsePolicy(Model):
