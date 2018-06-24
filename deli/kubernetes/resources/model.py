@@ -82,7 +82,7 @@ class ResourceModel(object):
 
     @property
     def resource_version(self):
-        return self._raw['resourceVersion']
+        return self._raw['metadata']['resourceVersion']
 
     @property
     def updated_at(self):

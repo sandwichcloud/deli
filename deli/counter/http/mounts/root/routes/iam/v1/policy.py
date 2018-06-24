@@ -34,7 +34,6 @@ class IAMSystemPolicyRouter(SandwichSystemRouter):
 
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestSetPolicy)
-    @cherrypy.tools.model_out(cls=ResponsePolicy)
     @cherrypy.tools.enforce_permission(permission_name="policy:system:set")
     def set(self):
         """Set a system policy
@@ -50,58 +49,50 @@ class IAMSystemPolicyRouter(SandwichSystemRouter):
                 200:
                     description: The policy
         """
+        cherrypy.response.status = 204
         policy = IAMPolicy.get("system")
         bindings = []
         request: RequestSetPolicy = cherrypy.request.model
 
         if request.resource_version != policy.resource_version:
-            raise cherrypy.HTTPError(400, 'The policy has a newer reosurce version than requested')
+            raise cherrypy.HTTPError(400, 'The policy has a newer resource version than requested')
+
+        has_one_admin = False
 
         for binding in request.bindings:
             role = IAMSystemRole.get(binding.role)
             if role is None:
                 raise cherrypy.HTTPError(404, 'Unknown system role ' + binding.role)
+
+            if role.name == 'admin':
+                if len(binding.members) > 0:
+                    has_one_admin = True
+
             for member in binding.members:
-                if member.contains(':') is False:
-                    raise cherrypy.HTTPError(400, 'Member must be in the following format: '
-                                                  '{user/serviceAccount/group}:{email}')
-
-                kind, email, *junk = member.split(":")
-
-                if len(junk) > 0:
-                    raise cherrypy.HTTPError(400, 'Member must be in the following format: '
-                                                  '{user/serviceAccount/group}:{email}')
-
-                username, domain, *_ = email.split("@")
-
-                if kind not in ['user', 'serviceAccount', 'group']:
-                    raise cherrypy.HTTPError(400, 'Member must be in the following format: '
-                                                  '{user/serviceAccount/group}:{email}')
-
-                if kind == 'serviceAccount':
-                    if domain != 'service-account.system.sandwich.local':
-                        raise cherrypy.HTTPError(400, 'Can only add system service accounts to a system policy')
-
-                    sa = SystemServiceAccount.get(username)
-                    if sa is None:
-                        raise cherrypy.HTTPError(404, 'Unknown System Service Account ' + email)
+                kind, email = member.split(":")
+                user, domain = email.split('@')
 
                 if kind == 'group':
-                    if domain != 'group.system.sandwich.local':
-                        raise cherrypy.HTTPError(400, 'Invalid email for group ' + email)
-                    group = IAMSystemGroup.get(username)
+                    group = IAMSystemGroup.get(user)
                     if group is None:
-                        raise cherrypy.HTTPError(404, 'Unknown Group ' + username)
+                        raise cherrypy.HTTPError(404, 'Unknown Group ' + email)
 
-                if kind == 'user':
-                    if domain.endswith('sandwich.local'):
-                        raise cherrypy.HTTPError(400, 'Cannot add ' + email + " has a user")
+                if kind == 'serviceAccount':
+                    _, project, *__ = domain.split('.')
+                    if project != 'system':
+                        raise cherrypy.HTTPError(400, 'Can only add system service accounts to a system policy.')
+
+                    sa = SystemServiceAccount.get(user)
+                    if sa is None:
+                        raise cherrypy.HTTPError(404, 'Unknown service account ' + email)
 
             bindings.append(binding.to_native())
 
+        if has_one_admin is False:
+            raise cherrypy.HTTPError(400, 'Must have an admin binding with at least one member')
+
         policy.bindings = bindings
         policy.save()
-        return ResponsePolicy.from_database(policy)
 
 
 class IAMProjectPolicyRouter(SandwichProjectRouter):
@@ -127,7 +118,6 @@ class IAMProjectPolicyRouter(SandwichProjectRouter):
 
     @Route(methods=[RequestMethods.POST])
     @cherrypy.tools.model_in(cls=RequestSetPolicy)
-    @cherrypy.tools.model_out(cls=ResponsePolicy)
     @cherrypy.tools.enforce_permission(permission_name="policy:project:set")
     def set(self):
         """Set a project policy
@@ -143,69 +133,53 @@ class IAMProjectPolicyRouter(SandwichProjectRouter):
                 200:
                     description: The policy
         """
+        cherrypy.response.status = 204
         project: Project = cherrypy.request.project
         policy = IAMPolicy.get(project)
         bindings = []
         request: RequestSetPolicy = cherrypy.request.model
 
         if request.resource_version != policy.resource_version:
-            raise cherrypy.HTTPError(400, 'The policy has a newer reosurce version than requested')
+            raise cherrypy.HTTPError(400, 'The policy has a newer resource version than requested')
+
+        has_one_owner = False
 
         for binding in request.bindings:
             role = IAMProjectRole.get(project, binding.role)
             if role is None:
                 raise cherrypy.HTTPError(404, 'Unknown project role ' + binding.role)
+
+            if role.name == "owner":
+                if len(binding.members) > 0:
+                    has_one_owner = True
+
             for member in binding.members:
-                if member.contains(':') is False:
-                    raise cherrypy.HTTPError(400, 'Member must be in the following format: '
-                                                  '{user/serviceAccount/group}:{email}')
-
-                kind, email, *junk = member.split(":")
-
-                if len(junk) > 0:
-                    raise cherrypy.HTTPError(400, 'Member must be in the following format: '
-                                                  '{user/serviceAccount/group}:{email}')
-
-                username, domain, *_ = email.split("@")
-
-                if kind not in ['user', 'serviceAccount', 'group']:
-                    raise cherrypy.HTTPError(400, 'Member must be in the following format: '
-                                                  '{user/serviceAccount/group}:{email}')
-
-                if kind == 'serviceAccount':
-                    saKind, project_name, *suffix = domain.split(".")
-                    suffix = ".".join(suffix)
-
-                    if saKind != 'service-account' or suffix != 'sandwich.local':
-                        raise cherrypy.HTTPError(400, 'Service account emails must be in the following format: '
-                                                      'service-account.{project_name/system}.sandwich.local')
-
-                    if project_name == 'system':
-                        sa = SystemServiceAccount.get(username)
-                        if sa is None:
-                            raise cherrypy.HTTPError(404, 'Unknown System Service Account ' + email)
-                    else:
-                        sa_project = Project.get(project_name)
-                        if sa_project is None:
-                            raise cherrypy.HTTPError(404, 'Unknown System Project Account ' + email)
-
-                        sa = ProjectServiceAccount.get(sa_project, username)
-                        if sa is None:
-                            raise cherrypy.HTTPError(404, 'Unknown System Project Account ' + email)
+                kind, email = member.split(":")
+                user, domain = email.split('@')
 
                 if kind == 'group':
-                    if domain != 'group.system.sandwich.local':
-                        raise cherrypy.HTTPError(400, 'Invalid email for group ' + email)
-                    group = IAMSystemGroup.get(username)
+                    group = IAMSystemGroup.get(user)
                     if group is None:
-                        raise cherrypy.HTTPError(404, 'Unknown Group ' + username)
+                        raise cherrypy.HTTPError(404, 'Unknown Group ' + email)
 
-                if kind == 'user':
-                    if domain.endswith('sandwich.local'):
-                        raise cherrypy.HTTPError(400, 'Cannot add ' + email + " has a user")
+                if kind == 'serviceAccount':
+                    _, sa_project_name, *__ = domain.split('.')
+
+                    if sa_project_name == 'system':
+                        sa = SystemServiceAccount.get(user)
+                    else:
+                        sa_project = Project.get(sa_project_name)
+                        if sa_project is None:
+                            raise cherrypy.HTTPError(404, 'Unknown service account ' + email)
+                        sa = ProjectServiceAccount.get(sa_project, user)
+
+                    if sa is None:
+                        raise cherrypy.HTTPError(404, 'Unknown service account ' + email)
 
             bindings.append(binding.to_native())
 
+        if has_one_owner is False:
+            raise cherrypy.HTTPError(400, 'Must have a owner binding with at least one member')
+
         policy.bindings = bindings
         policy.save()
-        return ResponsePolicy.from_database(policy)
