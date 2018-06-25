@@ -78,7 +78,7 @@ class IAMSystemPolicyRouter(SandwichSystemRouter):
                         raise cherrypy.HTTPError(404, 'Unknown Group ' + email)
 
                 if kind == 'serviceAccount':
-                    _, project, *__ = domain.split('.')
+                    project = domain.split('.')[1]
                     if project != 'system':
                         raise cherrypy.HTTPError(400, 'Can only add system service accounts to a system policy.')
 
@@ -163,7 +163,7 @@ class IAMProjectPolicyRouter(SandwichProjectRouter):
                         raise cherrypy.HTTPError(404, 'Unknown Group ' + email)
 
                 if kind == 'serviceAccount':
-                    _, sa_project_name, *__ = domain.split('.')
+                    sa_project_name = domain.split('.')[1]
 
                     if sa_project_name == 'system':
                         sa = SystemServiceAccount.get(user)

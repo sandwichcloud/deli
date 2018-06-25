@@ -45,7 +45,7 @@ class BindingMemberType(StringType):
         if not self.EMAIL_REGEX.match(email):
             raise ValidationError(self.MESSAGES['email'])
 
-        _, domain = email.split('@')
+        domain = email.split('@')[1]
 
         if kind == 'user':
             if email.endswith('sandwich.local'):

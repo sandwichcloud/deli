@@ -10,7 +10,7 @@ from deli.counter.http.router import SandwichProjectRouter
 from deli.kubernetes.resources.const import REGION_LABEL
 from deli.kubernetes.resources.model import ResourceState
 from deli.kubernetes.resources.project import Project
-from deli.kubernetes.resources.v1alpha1.image.model import Image, ImageVisibility
+from deli.kubernetes.resources.v1alpha1.image.model import Image
 from deli.kubernetes.resources.v1alpha1.region.model import Region
 
 
@@ -87,7 +87,7 @@ class ImageRouter(SandwichProjectRouter):
     @cherrypy.tools.model_params(cls=ParamsListImage)
     @cherrypy.tools.model_out_pagination(cls=ResponseImage)
     @cherrypy.tools.enforce_permission(permission_name="images:list")
-    def list(self, region_name, visibility: ImageVisibility, limit: int, marker: uuid.UUID):
+    def list(self, region_name, limit: int, marker: uuid.UUID):
         """List images
         ---
         get:

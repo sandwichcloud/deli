@@ -142,7 +142,7 @@ class IAMSystemRolesRouter(SandwichSystemRouter, RoleHelper):
             description: List system roles
             tags:
                 - iam
-                - image
+                - role
             responses:
                 200:
                     description: List of system roles
@@ -181,7 +181,7 @@ class IAMSystemRolesRouter(SandwichSystemRouter, RoleHelper):
             description: Delete a system role
             tags:
                 - iam
-                - image
+                - role
             responses:
                 204:
                     description: Role deleted
@@ -243,7 +243,7 @@ class IAMProjectRolesRouter(SandwichProjectRouter, RoleHelper):
             description: List project roles
             tags:
                 - iam
-                - image
+                - role
             responses:
                 200:
                     description: List of project roles
@@ -282,7 +282,7 @@ class IAMProjectRolesRouter(SandwichProjectRouter, RoleHelper):
             description: Delete a project role
             tags:
                 - iam
-                - image
+                - role
             responses:
                 204:
                     description: Role deleted

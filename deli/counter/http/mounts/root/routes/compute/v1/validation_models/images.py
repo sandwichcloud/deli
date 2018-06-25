@@ -3,7 +3,7 @@ from schematics import Model
 from schematics.types import UUIDType, StringType, IntType
 
 from deli.kubernetes.resources.model import ResourceState
-from deli.kubernetes.resources.v1alpha1.image.model import Image, ImageVisibility
+from deli.kubernetes.resources.v1alpha1.image.model import Image
 
 
 class ParamsImage(Model):
@@ -11,7 +11,6 @@ class ParamsImage(Model):
 
 
 class ParamsListImage(Model):
-    visibility = EnumType(ImageVisibility, default=ImageVisibility.PRIVATE)
     region_name = StringType()
     limit = IntType(default=100, max_value=100, min_value=1)
     marker = UUIDType()
