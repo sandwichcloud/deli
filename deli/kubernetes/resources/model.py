@@ -175,7 +175,7 @@ class ResourceModel(object):
                     if cond.type == "NamesAccepted":
                         if cond.status == "False":
                             raise ValueError(
-                                "Failed to create CRD %s: name conflict: %s".format(name, cond.message))
+                                "Failed to create CRD {0}: name conflict: {1}".format(name, cond.message))
             except ApiException as e:
                 # If it doesn't exist just wait, k8s may be slow
                 if e.status != 404:
@@ -295,7 +295,7 @@ class ProjectResourceModel(ResourceModel):
 
     def create(self):
         if self.project_name is None:
-            raise ValueError("Project must be set to create %s".format(self.__class__.__name__))
+            raise ValueError("Project must be set to create {0}".format(self.__class__.__name__))
 
         crd_api = client.CustomObjectsApi()
         self._raw = crd_api.create_namespaced_custom_object(GROUP, self.version(), "sandwich-" + self.project_name,

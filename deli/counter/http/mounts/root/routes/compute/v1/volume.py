@@ -50,8 +50,8 @@ class VolumeRouter(SandwichProjectRouter):
             raise cherrypy.HTTPError(404, 'A zone with the requested name does not exist.')
         if zone.state != ResourceState.Created:
             raise cherrypy.HTTPError(400,
-                                     'Can only create a volume with a zone in the following state: %s'.format(
-                                         ResourceState.Created))
+                                     'Can only create a volume with a zone in the following state: {0}'.format(
+                                         ResourceState.Created.value))
 
         quota: ProjectQuota = ProjectQuota.get(project.name)
         used_disk = quota.used_disk + request.size

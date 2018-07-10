@@ -43,8 +43,8 @@ class ZoneRouter(SandwichRouter):
             raise cherrypy.HTTPError(404, 'A region with the requested name does not exist.')
 
         if region.state != ResourceState.Created:
-            raise cherrypy.HTTPError(400, 'Can only create a zone with a region in the following state: %s'.format(
-                ResourceState.Created))
+            raise cherrypy.HTTPError(400, 'Can only create a zone with a region in the following state: {0}'.format(
+                ResourceState.Created.value))
 
         zone = Zone()
         zone.name = request.name

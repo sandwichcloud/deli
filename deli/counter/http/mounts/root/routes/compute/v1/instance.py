@@ -57,8 +57,8 @@ class InstanceRouter(SandwichProjectRouter):
         if region is None:
             raise cherrypy.HTTPError(404, 'A region with the requested name does not exist.')
         if region.state != ResourceState.Created:
-            raise cherrypy.HTTPError(400, 'Can only create a instance with a region in the following state: %s'.format(
-                ResourceState.Created))
+            raise cherrypy.HTTPError(400, 'Can only create a instance with a region in the following state: {0}'.format(
+                ResourceState.Created.value))
 
         zone = None
         if request.zone_name is not None:
@@ -69,8 +69,8 @@ class InstanceRouter(SandwichProjectRouter):
                 raise cherrypy.HTTPError(409, 'The requested zone is not within the requested region')
             if zone.state != ResourceState.Created:
                 raise cherrypy.HTTPError(400,
-                                         'Can only create a instance with a zone in the following state: %s'.format(
-                                             ResourceState.Created))
+                                         'Can only create a instance with a zone in the following state: {0}'.format(
+                                             ResourceState.Created.value))
 
         network = Network.get(request.network_name)
         if network is None:
@@ -78,8 +78,9 @@ class InstanceRouter(SandwichProjectRouter):
         if network.region.name != region.name:
             raise cherrypy.HTTPError(409, 'The requested network is not within the requested region')
         if network.state != ResourceState.Created:
-            raise cherrypy.HTTPError(400, 'Can only create a instance with a network in the following state: %s'.format(
-                ResourceState.Created))
+            raise cherrypy.HTTPError(400,
+                                     'Can only create a instance with a network in the following state: {0}'.format(
+                                         ResourceState.Created.value))
 
         # TODO: User inputs image url instead of id
         # projectId/imageId
@@ -89,8 +90,8 @@ class InstanceRouter(SandwichProjectRouter):
         if image.region.name != region.name:
             raise cherrypy.HTTPError(409, 'The requested image is not within the requested region')
         if image.state != ResourceState.Created:
-            raise cherrypy.HTTPError(400, 'Can only create a instance with a image in the following state: %s'.format(
-                ResourceState.Created))
+            raise cherrypy.HTTPError(400, 'Can only create a instance with a image in the following state: {0}'.format(
+                ResourceState.Created.value))
 
         flavor: Flavor = Flavor.get(request.flavor_name)
         if flavor is None:
@@ -101,7 +102,8 @@ class InstanceRouter(SandwichProjectRouter):
             keypair = Keypair.get(project, keypair_name)
             if keypair is None:
                 raise cherrypy.HTTPError(404,
-                                         'A keypair with the requested name of %s does not exist.'.format(keypair_name))
+                                         'A keypair with the requested name of {0} does not exist.'.format(
+                                             keypair_name))
             keypairs.append(keypair)
 
         # TODO: User inputs service account email instead of id
@@ -109,7 +111,7 @@ class InstanceRouter(SandwichProjectRouter):
         if request.service_account_name is not None:
             service_account = ProjectServiceAccount.get(project, request.service_account_name)
             if service_account is None:
-                raise cherrypy.HTTPError(404, 'A service account with the requested name of %s does not exist.'.format(
+                raise cherrypy.HTTPError(404, 'A service account with the requested name of {0} does not exist.'.format(
                     request.service_account_name))
         else:
             service_account = ProjectServiceAccount.get(project, 'default')

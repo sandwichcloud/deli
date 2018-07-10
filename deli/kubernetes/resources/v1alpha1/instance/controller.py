@@ -94,7 +94,7 @@ class InstanceController(ModelController):
                 # old_vm = self.vmware.get_vm(vmware_client, str(model.vm_id), datacenter)
                 # if old_vm is not None:
                 #     self.logger.info(
-                #         "A backing for the vm %s / %s already exists so it is going to be deleted".format(
+                #         "A backing for the vm {0} / {1} already exists so it is going to be deleted".format(
                 #             model.project.name,
                 #             model.name))
                 #     self.vmware.power_off_vm(vmware_client, old_vm, hard=True)

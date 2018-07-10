@@ -48,8 +48,8 @@ class ImageRouter(SandwichProjectRouter):
             raise cherrypy.HTTPError(404, 'A region with the requested name does not exist.')
 
         if region.state != ResourceState.Created:
-            raise cherrypy.HTTPError(409, 'Can only create a image with a region in the following state: %s'.format(
-                ResourceState.Created))
+            raise cherrypy.HTTPError(409, 'Can only create a image with a region in the following state: {0}'.format(
+                ResourceState.Created.value))
 
         # TODO: check duplicate file name
 
